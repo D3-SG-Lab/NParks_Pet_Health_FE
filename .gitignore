@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# native build output (managed workflow; prebuild is not used)
+/ios
+/android
+*.apk
+*.aab
+*.ipa
+
+# env (local only; .env.example is committed)
+.env
+.env.*
+!.env.example
+
+# misc
+.DS_Store
+*.log
+coverage/
+*.pem
+*.p8
+*.p12
+*.key
+*.mobileprovision
