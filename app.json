@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "AQC Animal Health",
+    "slug": "nparks-pet-health-fe",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "ios": { "supportsTablet": false },
+    "android": {}
+  }
+}
