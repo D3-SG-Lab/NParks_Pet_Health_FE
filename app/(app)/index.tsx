@@ -1,3 +1,3 @@
-import { OperationsPlaceholder } from '@/features/shell/OperationsPlaceholder';
+import { OperationsScreen } from '@/features/operations/OperationsScreen';
 
-export default OperationsPlaceholder;
+export default OperationsScreen;

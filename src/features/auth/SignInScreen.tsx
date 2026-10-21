@@ -65,7 +65,7 @@ export function SignInScreen() {
           AQC Animal Health
         </AppText>
         <AppText tone="muted" center>
-          Quarantine animal health records
+          Monitor quarantine animals, record health checks and manage cases.
         </AppText>
       </View>
 
@@ -118,7 +118,7 @@ export function SignInScreen() {
         <View style={styles.mfa}>
           <Icon name="lock-closed-outline" size="sm" color={theme.colors.textMuted} />
           <AppText variant="caption" tone="muted" style={styles.mfaText}>
-            Multi-factor authentication is required.
+            Multi-factor authentication required. You’ll be taken to your organisation’s sign-in page.
           </AppText>
         </View>
       </Card>

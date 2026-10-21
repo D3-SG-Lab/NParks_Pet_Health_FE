@@ -29,6 +29,11 @@ export const tokens = {
     logoPlaceholder: '#DCE3DE',
     primarySurface: '#E3F1E8',
     shadow: '#17211B',
+    /** Review status (wireframe style guide: blue). Text/background pair meets WCAG AA. */
+    info: '#17497F',
+    infoSurface: '#E3ECF8',
+    /** Dimmed backdrop behind bottom sheets. */
+    backdrop: 'rgba(23, 33, 27, 0.45)',
   },
   fontSizes: {
     caption: 13,
@@ -73,6 +78,17 @@ export const tokens = {
     iconLg: 28,
     iconBadge: 56,
     tabBarMinHeight: 60,
+    /** Circular avatar / animal photo placeholder. */
+    avatar: 48,
+    /** Square evidence thumbnail. */
+    thumb: 72,
+    progressHeight: 4,
+    /** Maximum height of a bottom sheet, as a fraction of the window. */
+    sheetMaxHeightRatio: 0.7,
+    /** Minimum height of a multi-line text input. */
+    textAreaMinHeight: 96,
+    /** Narrow content column for form flows on tablet/desktop. */
+    formMaxWidth: 560,
   },
   /** Cross-platform elevation (iOS/web shadow + Android elevation). */
   elevation: {

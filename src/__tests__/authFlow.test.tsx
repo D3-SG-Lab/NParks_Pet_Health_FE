@@ -54,7 +54,7 @@ describe('sign-in and session (mock mode, development)', () => {
     expect(screen.getByText('Sign in as')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'AVS / NParks officer' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Contractor' })).toBeTruthy();
-    expect(screen.getByText('Multi-factor authentication is required.')).toBeTruthy();
+    expect(screen.getByText(/Multi-factor authentication required/)).toBeTruthy();
     expect(screen.getByTestId('signin-mock')).toBeTruthy();
   });
 
