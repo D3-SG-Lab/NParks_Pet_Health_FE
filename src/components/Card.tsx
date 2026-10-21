@@ -25,5 +25,10 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.divider,
     padding: theme.spacing.lg,
     gap: theme.spacing.md,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: theme.elevation.card.shadowOpacity,
+    shadowRadius: theme.elevation.card.shadowRadius,
+    shadowOffset: { width: 0, height: theme.elevation.card.shadowOffsetY },
+    elevation: theme.elevation.card.elevation,
   },
 });

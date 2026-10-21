@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { useSession, type AuthErrorKind, type AuthProviderId } from '@/auth';
 import { isProviderAvailable } from '@/auth/providers';
-import { AppText, Banner, Button, Card, Screen, ToggleRow } from '@/components';
+import { AppText, Banner, Button, Card, FadeIn, Icon, Screen, ToggleRow } from '@/components';
 import { isMockAuthEnabled } from '@/config/env';
 import { theme } from '@/theme';
 
@@ -17,6 +17,7 @@ interface FailureState {
 export function SignInScreen() {
   const { signIn, notice, dismissNotice, biometricEnabled, setBiometricEnabled } = useSession();
   const [pending, setPending] = useState<AuthProviderId | null>(null);
+  const inFlight = useRef(false);
   const [failure, setFailure] = useState<FailureState | null>(null);
   const [biometricMessage, setBiometricMessage] = useState<string | null>(null);
 
@@ -26,10 +27,14 @@ export function SignInScreen() {
   const mock = isMockAuthEnabled();
 
   const handleSignIn = async (provider: AuthProviderId) => {
+    // Synchronous guard: state updates are async, so a fast double tap could otherwise start two flows.
+    if (inFlight.current) return;
+    inFlight.current = true;
     setFailure(null);
     dismissNotice();
     setPending(provider);
     const error = await signIn(provider);
+    inFlight.current = false;
     setPending(null);
     if (error) setFailure({ kind: error.kind, provider });
     // On success the navigator moves to the tabs automatically (route guard).
@@ -47,12 +52,15 @@ export function SignInScreen() {
   return (
     <Screen contentStyle={styles.content}>
       <View style={styles.header}>
+        {/* Logo placeholder: replace with the brand asset when DES delivers it. */}
         <View
           style={styles.logo}
           accessible
           accessibilityRole="image"
           accessibilityLabel="AQC Animal Health logo"
-        />
+        >
+          <Icon name="paw" size="lg" color={theme.colors.primary} />
+        </View>
         <AppText variant="title" center accessibilityRole="header">
           AQC Animal Health
         </AppText>
@@ -84,12 +92,14 @@ export function SignInScreen() {
         ) : null}
       </View>
 
-      <View style={styles.actions}>
+      <FadeIn>
+      <Card style={styles.actions}>
         <AppText bold accessibilityRole="header">
           Sign in as
         </AppText>
         <Button
           label="AVS / NParks officer"
+          icon="shield-checkmark-outline"
           variant="primary"
           testID="signin-officer"
           loading={pending === 'officer'}
@@ -98,16 +108,21 @@ export function SignInScreen() {
         />
         <Button
           label="Contractor"
+          icon="briefcase-outline"
           variant="secondary"
           testID="signin-contractor"
           loading={pending === 'contractor'}
           disabled={busy || !contractorAvailable}
           onPress={() => void handleSignIn('contractor')}
         />
-        <AppText variant="caption" tone="muted" center>
-          Multi-factor authentication is required.
-        </AppText>
-      </View>
+        <View style={styles.mfa}>
+          <Icon name="lock-closed-outline" size="sm" color={theme.colors.textMuted} />
+          <AppText variant="caption" tone="muted" style={styles.mfaText}>
+            Multi-factor authentication is required.
+          </AppText>
+        </View>
+      </Card>
+      </FadeIn>
 
       {Platform.OS !== 'web' ? (
         <Card>
@@ -136,9 +151,13 @@ const styles = StyleSheet.create({
     width: theme.control.logo,
     height: theme.control.logo,
     borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.logoPlaceholder,
+    backgroundColor: theme.colors.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: theme.spacing.sm,
   },
   banners: { gap: theme.spacing.md },
-  actions: { gap: theme.spacing.md },
+  actions: { gap: theme.spacing.md, padding: theme.spacing.xl },
+  mfa: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm },
+  mfaText: { flexShrink: 1 },
 });

@@ -27,6 +27,8 @@ export const tokens = {
     disabledSurface: '#E4E9E6',
     focus: '#0B57D0',
     logoPlaceholder: '#DCE3DE',
+    primarySurface: '#E3F1E8',
+    shadow: '#17211B',
   },
   fontSizes: {
     caption: 13,
@@ -64,6 +66,25 @@ export const tokens = {
     borderWidth: 1,
     focusWidth: 2,
     contentMaxWidth: 480,
+    /** Wider column for placeholder/content screens on tablet and desktop. */
+    contentMaxWidthWide: 960,
+    iconSm: 18,
+    iconMd: 22,
+    iconLg: 28,
+    iconBadge: 56,
+    tabBarMinHeight: 60,
+  },
+  /** Cross-platform elevation (iOS/web shadow + Android elevation). */
+  elevation: {
+    card: { shadowOpacity: 0.06, shadowRadius: 12, shadowOffsetY: 4, elevation: 2 },
+  },
+  motion: {
+    fast: 120,
+    base: 240,
+  },
+  breakpoints: {
+    tablet: 768,
+    desktop: 1200,
   },
 } as const;
 

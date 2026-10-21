@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type Vi
 import { theme } from '@/theme';
 
 import { AppText } from './AppText';
+import { Icon, type IconName } from './Icon';
 
 export type ButtonVariant = 'primary' | 'secondary';
 
@@ -17,6 +18,8 @@ interface ButtonProps {
   accessibilityHint?: string;
   testID?: string;
   style?: StyleProp<ViewStyle>;
+  /** Optional leading icon (decorative). */
+  icon?: IconName;
 }
 
 export function Button({
@@ -29,6 +32,7 @@ export function Button({
   accessibilityHint,
   testID,
   style,
+  icon,
 }: ButtonProps) {
   const inactive = disabled || loading;
   const isPrimary = variant === 'primary';
@@ -57,7 +61,11 @@ export function Button({
       ]}
     >
       <View style={styles.content}>
-        {loading ? <ActivityIndicator color={textColor} accessibilityElementsHidden /> : null}
+        {loading ? (
+          <ActivityIndicator color={textColor} accessibilityElementsHidden />
+        ) : icon ? (
+          <Icon name={icon} color={textColor} />
+        ) : null}
         <AppText variant="bodyLarge" bold center style={{ color: textColor, flexShrink: 1 }}>
           {label}
         </AppText>
@@ -88,7 +96,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.disabledSurface,
     borderColor: theme.colors.disabledSurface,
   },
-  pressed: { opacity: 0.85 },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   focused: {
     borderColor: theme.colors.focus,
     borderWidth: theme.control.focusWidth,

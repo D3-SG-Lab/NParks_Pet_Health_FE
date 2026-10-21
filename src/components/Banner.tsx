@@ -3,8 +3,15 @@ import { StyleSheet, View } from 'react-native';
 import { theme } from '@/theme';
 
 import { AppText } from './AppText';
+import { Icon, type IconName } from './Icon';
 
 export type BannerKind = 'error' | 'warning' | 'info';
+
+const iconFor: Record<BannerKind, IconName> = {
+  error: 'alert-circle',
+  warning: 'warning',
+  info: 'information-circle',
+};
 
 interface BannerProps {
   kind: BannerKind;
@@ -24,14 +31,17 @@ export function Banner({ kind, title, message, testID }: BannerProps) {
       accessibilityLabel={title ? `${title}. ${message}` : message}
       style={[styles.base, kind === 'error' ? styles.error : kind === 'warning' ? styles.warning : styles.info]}
     >
-      {title ? (
-        <AppText bold tone={kind === 'error' ? 'danger' : 'default'}>
-          {title}
+      <Icon name={iconFor[kind]} color={kind === 'error' ? theme.colors.danger : theme.colors.text} />
+      <View style={styles.body}>
+        {title ? (
+          <AppText bold tone={kind === 'error' ? 'danger' : 'default'}>
+            {title}
+          </AppText>
+        ) : null}
+        <AppText variant="caption" tone={kind === 'error' ? 'danger' : 'default'}>
+          {message}
         </AppText>
-      ) : null}
-      <AppText variant="caption" tone={kind === 'error' ? 'danger' : 'default'}>
-        {message}
-      </AppText>
+      </View>
     </View>
   );
 }
@@ -41,8 +51,11 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     borderWidth: theme.control.borderWidth,
     padding: theme.spacing.md,
-    gap: theme.spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: theme.spacing.md,
   },
+  body: { flex: 1, gap: theme.spacing.xs },
   error: { backgroundColor: theme.colors.dangerSurface, borderColor: theme.colors.danger },
   warning: { backgroundColor: theme.colors.warningSurface, borderColor: theme.colors.warning },
   info: { backgroundColor: theme.colors.surface, borderColor: theme.colors.divider },

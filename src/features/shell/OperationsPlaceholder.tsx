@@ -10,13 +10,14 @@ export function OperationsPlaceholder() {
   const [signingOut, setSigningOut] = useState(false);
 
   return (
-    <PlaceholderScreen title="Operations">
+    <PlaceholderScreen title="Operations" icon="grid-outline">
       <AppText variant="caption" tone="muted" testID="operations-signed-in-as">
         {session?.name ? `${session.name} · ` : ''}
         {role === 'officer' ? 'AVS / NParks officer' : role === 'contractor' ? 'Contractor' : ''}
       </AppText>
       <Button
         label="Sign out"
+        icon="log-out-outline"
         variant="secondary"
         testID="operations-signout"
         loading={signingOut}

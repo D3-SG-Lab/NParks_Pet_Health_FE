@@ -2,22 +2,17 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { createQueryClient } from '@/api/queryClient';
 import { AuthProvider, useSession } from '@/auth';
-import { theme } from '@/theme';
+import { LoadingView } from '@/components';
 
 function RootNavigator() {
   const { status } = useSession();
 
   if (status === 'loading') {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={theme.colors.primary} accessibilityLabel="Loading" />
-      </View>
-    );
+    return <LoadingView label="Loading" />;
   }
 
   // Route guards: signed-out users can only reach sign-in; signed-in users only reach the tabs.
@@ -51,7 +46,3 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background },
-});
