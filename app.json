@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "AQC Animal Health",
+    "slug": "aqc-animal-health",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": [
+      "aqc-officer",
+      "aqc-contractor"
+    ],
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "sg.gov.nparks.aqc.animalhealth",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Use Face ID to unlock AQC Animal Health when you reopen the app."
+      }
+    },
+    "android": {
+      "package": "sg.gov.nparks.aqc.animalhealth",
+      "permissions": [
+        "USE_BIOMETRIC"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-sharing"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
