@@ -7,10 +7,10 @@ import { queryKeys } from '@/api/queryKeys';
 import { useSession } from '@/auth';
 import {
   AppText,
-  Avatar,
   Banner,
   Button,
   Card,
+  Icon,
   ErrorView,
   FormField,
   LoadingView,
@@ -148,6 +148,16 @@ function ExamForm({ details, initial }: ExamFormProps) {
     }
   };
 
+  const summaryLine = [details.kennel, details.name.trim(), details.species].filter(Boolean).join(' · ');
+  const summary = (
+    <AppText variant="bodyS" tone="muted" numberOfLines={1} style={styles.aside} testID="exam-animal-summary" accessibilityLabel={summaryLine}>
+      <AppText variant="mono" bold>
+        {details.kennel}
+      </AppText>
+      {['', details.name.trim(), details.species].join(' · ')}
+    </AppText>
+  );
+
   return (
     <PageLayout
       header={
@@ -155,83 +165,68 @@ function ExamForm({ details, initial }: ExamFormProps) {
           title="Arrival Exam"
           onBack={goBack}
           backLabel="Go back to New Arrival"
-          trailing={<AppText variant="caption" tone="muted">{`Step 2 of ${TOTAL_STEPS}`}</AppText>}
-          below={<StepProgress step={2} total={TOTAL_STEPS} />}
+          below={<StepProgress step={2} total={TOTAL_STEPS} label={`Step 2 of ${TOTAL_STEPS} · Baseline exam`} aside={summary} />}
         />
       }
       footer={
-        <Button
-          label="Complete exam & start monitoring"
-          testID="exam-complete"
-          loading={complete.isPending}
-          onPress={() => void handleComplete()}
-        />
+        <>
+          <View style={styles.note}>
+            <Icon name="sparkles-outline" size="sm" color={theme.colors.ai} />
+            <AppText variant="bodyS" tone="muted" style={styles.flex}>
+              Completing starts active monitoring. Abnormal findings are sent for AI routing.
+            </AppText>
+          </View>
+          {errorCount > 0 ? (
+            <AppText variant="bodyS" tone="danger" center accessibilityLiveRegion="polite" testID="exam-error-summary">
+              {`Fix ${errorCount} ${errorCount === 1 ? 'field' : 'fields'} to complete the exam`}
+            </AppText>
+          ) : null}
+          <Button label="Complete exam" testID="exam-complete" loading={complete.isPending} onPress={() => void handleComplete()} />
+        </>
       }
     >
-      <Card style={styles.summary} testID="exam-animal-summary">
-        <Avatar name={details.name} />
-        <View style={styles.summaryText}>
-          <AppText bold variant="bodyLarge">
-            {details.name.trim()}
-          </AppText>
-          <AppText variant="caption" tone="muted">
-            {[details.kennel, details.species, details.sex].filter(Boolean).join(' · ')}
-          </AppText>
-        </View>
-      </Card>
-
       {chipConflict ? (
         <Banner kind="error" title="Microchip already registered" message={submitError.message} testID="exam-chip-conflict" />
       ) : submitError ? (
-        <Banner
-          kind="error"
-          title="Couldn't complete the exam"
-          message="Your entries are kept. Please try again."
-          testID="exam-submit-error"
-        />
+        <Banner kind="error" title="Couldn't complete the exam" message="Your entries are kept. Please try again." testID="exam-submit-error" />
       ) : null}
       {chipConflict ? (
-        <Button
-          label="Edit arrival details"
-          variant="secondary"
-          testID="exam-edit-details"
-          onPress={() => router.navigate('/new-arrival')}
-        />
-      ) : null}
-      {errorCount > 0 ? (
-        <Banner
-          kind="error"
-          title="Check the highlighted fields"
-          message={`${errorCount} ${errorCount === 1 ? 'field needs' : 'fields need'} attention before you can complete the exam.`}
-          testID="exam-error-summary"
-        />
+        <Button label="Edit arrival details" variant="secondary" testID="exam-edit-details" onPress={() => router.navigate('/new-arrival')} />
       ) : null}
 
-      <SelectField
-        label="Examining vet"
-        testID="exam-vet"
-        placeholder="Select vet"
-        options={vetOptions}
-        value={exam.vetId}
-        onChange={(vetId) => update({ vetId })}
-        error={visible.vetId}
-        loading={vets.isPending}
-        loadError={vets.isError ? "Couldn't load vets." : undefined}
-        onRetry={() => void vets.refetch()}
-      />
+      <View style={styles.pair}>
+        <View style={styles.vet}>
+          <SelectField
+            label="Examining vet"
+            required
+            testID="exam-vet"
+            placeholder="Select vet"
+            options={vetOptions}
+            value={exam.vetId}
+            onChange={(vetId) => update({ vetId })}
+            error={visible.vetId}
+            loading={vets.isPending}
+            loadError={vets.isError ? "Couldn't load vets." : undefined}
+            onRetry={() => void vets.refetch()}
+          />
+        </View>
+        <View style={styles.weight}>
+          <TextField
+            label="Weight"
+            required
+            suffix="kg"
+            testID="exam-weight"
+            placeholder="0.0"
+            value={exam.weightKg}
+            keyboardType="decimal-pad"
+            inputMode="decimal"
+            onChangeText={(text) => update({ weightKg: text.replace(',', '.') })}
+            error={visible.weightKg}
+          />
+        </View>
+      </View>
 
-      <TextField
-        label="Weight (kg)"
-        testID="exam-weight"
-        placeholder="0.0"
-        value={exam.weightKg}
-        keyboardType="decimal-pad"
-        inputMode="decimal"
-        onChangeText={(text) => update({ weightKg: text.replace(',', '.') })}
-        error={visible.weightKg}
-      />
-
-      <FormField label="Mentation">
+      <FormField label="Mentation" required>
         <SegmentedControl
           label="Mentation"
           testID="exam-mentation"
@@ -241,27 +236,35 @@ function ExamForm({ details, initial }: ExamFormProps) {
         />
       </FormField>
 
-      <SectionLabel>Physical exam</SectionLabel>
-      <Card style={styles.findings}>
-        {EXAM_SYSTEMS.map((system) => (
-          <ExamFindingRow
-            key={system}
-            testID={`exam-${system}`}
-            label={EXAM_SYSTEM_LABELS[system]}
-            finding={exam.findings[system]}
-            noteError={visible[`note:${system}`]}
-            onChange={(finding) => updateFinding(system, finding)}
-            onAddPhoto={() => addPhoto(system)}
-          />
-        ))}
-      </Card>
+      <View style={styles.exam}>
+        <SectionLabel trailing="Abnormal rows need a note">Physical exam</SectionLabel>
+        <Card padded={false}>
+          {EXAM_SYSTEMS.map((system, index) => (
+            <ExamFindingRow
+              key={system}
+              divider={index > 0}
+              testID={`exam-${system}`}
+              label={EXAM_SYSTEM_LABELS[system]}
+              finding={exam.findings[system]}
+              noteError={visible[`note:${system}`]}
+              onChange={(finding) => updateFinding(system, finding)}
+              onAddPhoto={() => addPhoto(system)}
+            />
+          ))}
+        </Card>
+      </View>
     </PageLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  empty: { alignItems: 'center', padding: theme.spacing.xl },
-  summary: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
-  summaryText: { flex: 1, gap: theme.spacing.xs },
-  findings: { padding: 0, gap: 0, overflow: 'hidden' },
+  empty: { alignItems: 'center', padding: theme.spacing.s6 },
+  flex: { flex: 1 },
+  aside: { flexShrink: 1, textAlign: 'right' },
+  note: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.s2 },
+  exam: { gap: theme.spacing.s3 },
+  // Vet and weight side by side; they stack only when the screen or text size leaves no room.
+  pair: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.s3 },
+  vet: { flexGrow: 2, flexBasis: 180 },
+  weight: { flexGrow: 1, flexBasis: 110 },
 });

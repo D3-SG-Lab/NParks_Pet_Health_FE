@@ -21,7 +21,7 @@ export function LoadingView({ label = 'Loading', testID }: LoadingViewProps) {
       accessibilityState={{ busy: true }}
     >
       <ActivityIndicator size="large" color={theme.colors.primary} />
-      <AppText variant="caption" tone="muted">
+      <AppText variant="bodyS" tone="muted">
         {label}
       </AppText>
     </View>
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing.md,
+    gap: theme.spacing.s3,
     backgroundColor: theme.colors.background,
   },
 });

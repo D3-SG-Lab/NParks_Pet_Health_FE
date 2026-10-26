@@ -45,16 +45,19 @@ export function validateDetails(input: ArrivalDetailsInput, today: string = toda
   const chipError = validateMicrochipFormat(input.microchip);
   if (chipError) errors.microchip = chipError;
 
-  // Dates are optional in the wireframe; when typed they must be real calendar dates.
+  // Date of birth is optional; the release date is required (21 Oct wireframe). Both must be real dates.
   const dob = input.dateOfBirth.trim() ? parseDdMmYyyy(input.dateOfBirth) : null;
   if (input.dateOfBirth.trim()) {
     if (!dob) errors.dateOfBirth = 'Use DD/MM/YYYY.';
     else if (dob.iso > today) errors.dateOfBirth = 'Date of birth cannot be in the future.';
   }
-  if (input.releaseDate.trim()) {
+  if (!input.releaseDate.trim()) {
+    errors.releaseDate = 'Enter the release date.';
+  } else {
     const release = parseDdMmYyyy(input.releaseDate);
     if (!release) errors.releaseDate = 'Use DD/MM/YYYY.';
     else if (dob && release.iso < dob.iso) errors.releaseDate = 'Release date cannot be before date of birth.';
+    else if (release.iso < today) errors.releaseDate = 'Release date cannot be in the past.';
   }
   return errors;
 }

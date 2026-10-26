@@ -1,4 +1,11 @@
-import { DEFAULT_SESSION_IDLE_MINUTES, isMockAuthEnabled, parseAuthMode, parseIdleMinutes } from '@/config/env';
+import {
+  DEFAULT_SESSION_IDLE_MINUTES,
+  isAuthBypassEnabled,
+  isMockAuthEnabled,
+  parseAuthBypass,
+  parseAuthMode,
+  parseIdleMinutes,
+} from '@/config/env';
 
 describe('env config', () => {
   it('defaults the idle timeout to 15 minutes (temporary) and parses valid values', () => {
@@ -30,6 +37,31 @@ describe('env config', () => {
     it('can never be enabled in a production build', () => {
       (globalThis as { __DEV__?: boolean }).__DEV__ = false;
       expect(isMockAuthEnabled('mock')).toBe(false);
+    });
+  });
+
+  describe('auth bypass', () => {
+    const original = (globalThis as { __DEV__?: boolean }).__DEV__;
+    afterEach(() => {
+      (globalThis as { __DEV__?: boolean }).__DEV__ = original;
+    });
+
+    it('only treats "officer" and "contractor" as bypass roles', () => {
+      expect(parseAuthBypass('officer')).toBe('officer');
+      expect(parseAuthBypass(' Contractor ')).toBe('contractor');
+      expect(parseAuthBypass('true')).toBeUndefined();
+      expect(parseAuthBypass(undefined)).toBeUndefined();
+    });
+
+    it('is enabled only in development with a role set', () => {
+      (globalThis as { __DEV__?: boolean }).__DEV__ = true;
+      expect(isAuthBypassEnabled('officer')).toBe(true);
+      expect(isAuthBypassEnabled(undefined)).toBe(false);
+    });
+
+    it('can never be enabled in a production build', () => {
+      (globalThis as { __DEV__?: boolean }).__DEV__ = false;
+      expect(isAuthBypassEnabled('officer')).toBe(false);
     });
   });
 });

@@ -11,7 +11,7 @@ import {
 import { AppState, Platform, View } from 'react-native';
 
 import { configureApiAuth } from '@/api';
-import { env, isMockAuthEnabled } from '@/config/env';
+import { env, isAuthBypassEnabled, isMockAuthEnabled } from '@/config/env';
 
 import { authenticateWithBiometrics, isBiometricSupported } from './biometrics';
 import { buildSession } from './claims';
@@ -158,6 +158,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setBiometricEnabledState(pref);
       setBiometricSupported(supported);
 
+      // Development auth bypass: start signed in as the configured role, skipping sign-in and unlock.
+      const bypassRole = isAuthBypassEnabled() ? env.authBypassRole : undefined;
+      if (bypassRole) {
+        try {
+          await applyTokens(bypassRole, mockTokens(bypassRole), true);
+          if (cancelled) return;
+          lastActiveRef.current = Date.now();
+          return updateStatus('signedIn');
+        } catch {
+          // Fall through to the normal restore.
+        }
+      }
+
       let stored: StoredSession | null = null;
       try {
         stored = await storage.loadSession();
@@ -231,6 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (status !== 'signedIn' && status !== 'locked') return;
+    if (isAuthBypassEnabled()) return; // no idle sign-out while the development bypass is on
     const check = () => {
       if (Date.now() - lastActiveRef.current > idleMs) void endSession('idle');
     };

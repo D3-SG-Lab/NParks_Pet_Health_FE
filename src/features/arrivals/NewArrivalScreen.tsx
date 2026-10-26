@@ -7,6 +7,7 @@ import {
   AppText,
   Banner,
   Button,
+  Card,
   ErrorView,
   FormField,
   Icon,
@@ -41,7 +42,7 @@ const TOTAL_STEPS = 2;
 const speciesOptions: readonly SegmentOption<Species>[] = SPECIES.map((value) => ({ value, label: value }));
 const sexOptions: readonly SegmentOption<Sex>[] = SEXES.map((value) => ({ value, label: value }));
 
-/** Wireframe 02: New Arrival, step 1 of 2. Officers only (contractors do not see New Arrival). */
+/** Screen 5: New Arrival, step 1 of 2. Officers only (contractors do not see New Arrival). */
 export function NewArrivalScreen() {
   const { role } = useSession();
   const draft = useArrivalDraft();
@@ -112,14 +113,17 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
     }
   };
 
-  const handleSaveDraft = async () => {
+  // The draft autosaves; leaving flushes the latest edits first so nothing typed is lost.
+  const handleBack = async () => {
     try {
-      await autosave.flush();
-      toast.show('Draft saved on this device session. You can continue it later from New Arrival.', 'success');
-      router.navigate('/');
+      if (dirty) {
+        await autosave.flush();
+        toast.show('Draft saved. Continue it later from New Arrival.', 'success');
+      }
     } catch {
-      toast.show("Couldn't save the draft. Please try again.", 'error');
+      toast.show("Couldn't save the draft. It will be retried when you return.", 'error');
     }
+    goBack();
   };
 
   const handleContinue = async () => {
@@ -137,193 +141,221 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
   const errorCount = Object.keys(visible).length + (chipTaken && !visible.microchip ? 1 : 0);
   const draftLabel =
     autosave.status === 'saving'
-      ? 'Saving draft…'
+      ? 'Saving…'
       : autosave.status === 'error'
-        ? "Couldn't save draft. We'll retry when you make a change."
-        : 'Draft saved automatically';
+        ? 'Not saved'
+        : autosave.status === 'saved' || restoredFrom
+          ? 'Draft saved'
+          : 'Autosaves';
 
   return (
     <PageLayout
       header={
         <ScreenHeader
           title="New Arrival"
-          onBack={goBack}
-          backLabel="Go back to Operations"
+          onBack={() => void handleBack()}
+          backLabel="Save draft and go back to Operations"
           trailing={
-            <AppText variant="caption" tone="muted">{`Step 1 of ${TOTAL_STEPS}`}</AppText>
+            <View style={styles.draftStatus} accessibilityLiveRegion="polite" testID="arrival-draft-status">
+              {autosave.status === 'saving' ? null : (
+                <Icon
+                  name={autosave.status === 'error' ? 'alert-circle-outline' : 'cloud-done-outline'}
+                  size="sm"
+                  color={autosave.status === 'error' ? theme.colors.danger : autosave.status === 'idle' && !restoredFrom ? theme.colors.text3 : theme.colors.success}
+                />
+              )}
+              <AppText variant="label" tone={autosave.status === 'error' ? 'danger' : autosave.status === 'idle' && !restoredFrom ? 'subtle' : 'success'}>
+                {draftLabel}
+              </AppText>
+            </View>
           }
-          below={<StepProgress step={1} total={TOTAL_STEPS} />}
+          below={<StepProgress step={1} total={TOTAL_STEPS} label={`Step 1 of ${TOTAL_STEPS} · Animal details`} aside="Next: Arrival exam" />}
         />
       }
       footer={
-        <View style={styles.footerRow}>
+        <>
           <Button
-            label="Save draft"
-            variant="secondary"
-            testID="arrival-save-draft"
-            style={styles.footerButton}
-            disabled={checking}
-            onPress={() => void handleSaveDraft()}
-          />
-          <Button
-            label="Continue to exam"
+            label="Continue to arrival exam"
             testID="arrival-continue"
-            style={styles.footerButton}
             loading={checking}
+            loadingLabel="Checking microchip"
             onPress={() => void handleContinue()}
           />
-        </View>
+          {errorCount > 0 ? (
+            <AppText variant="bodyS" tone="muted" center accessibilityLiveRegion="polite" testID="arrival-error-summary">
+              {`Fix ${errorCount} ${errorCount === 1 ? 'field' : 'fields'} to continue`}
+            </AppText>
+          ) : null}
+        </>
       }
     >
       {restoredFrom ? (
         <Banner kind="info" message="Your saved draft was restored. Edit it or continue to the exam." testID="arrival-draft-restored" />
       ) : null}
-      {errorCount > 0 ? (
-        <Banner
-          kind="error"
-          title="Check the highlighted fields"
-          message={`${errorCount} ${errorCount === 1 ? 'field needs' : 'fields need'} attention before you can continue.`}
-          testID="arrival-error-summary"
-        />
-      ) : null}
 
-      <TextField
-        label="Pet name"
-        testID="arrival-name"
-        placeholder="e.g. Yang Yang"
-        value={details.name}
-        onChangeText={(name) => update({ name })}
-        error={visible.name}
-        autoCapitalize="words"
-        returnKeyType="next"
-      />
+      <Card padded={false}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardIcon}>
+            <Icon name="paw-outline" size="sm" color={theme.colors.primary} />
+          </View>
+          <AppText variant="titleS" accessibilityRole="header" style={styles.flex}>
+            Animal details
+          </AppText>
+          <AppText variant="caption" tone="subtle">
+            <AppText variant="caption" tone="danger">
+              *
+            </AppText>
+            {' required'}
+          </AppText>
+        </View>
 
-      <SelectField
-        label="Kennel / room"
-        testID="arrival-kennel"
-        placeholder="Select kennel / room"
-        options={kennelOptions}
-        value={details.kennel}
-        onChange={(kennel) => update({ kennel })}
-        error={visible.kennel}
-        loading={kennels.isPending}
-        loadError={kennels.isError ? "Couldn't load kennels." : undefined}
-        onRetry={() => void kennels.refetch()}
-      />
+        <View style={styles.fields}>
+          <TextField
+            label="Pet name"
+            required
+            testID="arrival-name"
+            placeholder="e.g. Yang Yang"
+            value={details.name}
+            onChangeText={(name) => update({ name })}
+            error={visible.name}
+            autoCapitalize="words"
+            returnKeyType="next"
+          />
 
-      <FormField label="Species">
-        <SegmentedControl
-          label="Species"
-          testID="arrival-species"
-          options={speciesOptions}
-          value={details.species}
-          onChange={(species) => update({ species })}
-        />
-      </FormField>
+          <SelectField
+            label="Kennel / room"
+            required
+            mono
+            testID="arrival-kennel"
+            placeholder="Select kennel / room"
+            options={kennelOptions}
+            value={details.kennel}
+            onChange={(kennel) => update({ kennel })}
+            error={visible.kennel}
+            loading={kennels.isPending}
+            loadError={kennels.isError ? "Couldn't load kennels." : undefined}
+            onRetry={() => void kennels.refetch()}
+          />
 
-      <SelectField
-        label="Country of origin"
-        testID="arrival-country"
-        placeholder="Select country"
-        options={countryOptions}
-        value={details.countryCode}
-        onChange={(countryCode) => update({ countryCode })}
-        error={visible.countryCode}
-        loading={countries.isPending}
-        loadError={countries.isError ? "Couldn't load countries." : undefined}
-        onRetry={() => void countries.refetch()}
-      />
+          <FormField label="Species" required>
+            <SegmentedControl
+              label="Species"
+              testID="arrival-species"
+              options={speciesOptions}
+              value={details.species}
+              onChange={(species) => update({ species })}
+            />
+          </FormField>
 
-      <TextField
-        label="Microchip no."
-        testID="arrival-microchip"
-        placeholder={`${MICROCHIP_LENGTH}-digit number`}
-        value={details.microchip}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        maxLength={MICROCHIP_LENGTH}
-        onChangeText={(text) => {
-          setChipTaken(false);
-          checkedChip.current = null;
-          update({ microchip: text.replace(/\D/g, '') });
-        }}
-        onBlur={() => void checkMicrochip(details.microchip)}
-        error={chipError}
-        helper="Must be unique across active stays."
-        accessory={
-          <Button
-            label="Scan"
-            icon="scan-outline"
-            variant="secondary"
-            testID="arrival-scan"
-            accessibilityHint="Scan the microchip with the camera"
-            onPress={() =>
-              // Scanning needs camera access and a scanner module, neither of which is wired yet.
-              toast.show('Microchip scanning is not available yet. Please type the number.', 'info')
+          <SelectField
+            label="Country of origin"
+            required
+            testID="arrival-country"
+            placeholder="Select country"
+            options={countryOptions}
+            value={details.countryCode}
+            onChange={(countryCode) => update({ countryCode })}
+            error={visible.countryCode}
+            loading={countries.isPending}
+            loadError={countries.isError ? "Couldn't load countries." : undefined}
+            onRetry={() => void countries.refetch()}
+          />
+
+          <TextField
+            label="Microchip no."
+            required
+            mono
+            testID="arrival-microchip"
+            placeholder={`${MICROCHIP_LENGTH}-digit number`}
+            value={details.microchip}
+            keyboardType="number-pad"
+            inputMode="numeric"
+            maxLength={MICROCHIP_LENGTH}
+            onChangeText={(text) => {
+              setChipTaken(false);
+              checkedChip.current = null;
+              update({ microchip: text.replace(/\D/g, '') });
+            }}
+            onBlur={() => void checkMicrochip(details.microchip)}
+            error={chipError}
+            helper="Must be unique across active stays."
+            accessory={
+              <Button
+                label="Scan"
+                icon="scan-outline"
+                variant="secondary"
+                testID="arrival-scan"
+                accessibilityHint="Scan the microchip with the camera"
+                onPress={() =>
+                  // Scanning needs camera access and a scanner module, neither of which is wired yet.
+                  toast.show('Microchip scanning is not available yet. Please type the number.', 'info')
+                }
+              />
             }
           />
-        }
-      />
 
-      <FormField label="Sex" error={visible.sex}>
-        <SegmentedControl
-          label="Sex"
-          testID="arrival-sex"
-          options={sexOptions}
-          value={details.sex}
-          onChange={(sex) => update({ sex })}
-        />
-      </FormField>
+          <FormField label="Sex" required error={visible.sex}>
+            <SegmentedControl label="Sex" testID="arrival-sex" options={sexOptions} value={details.sex} onChange={(sex) => update({ sex })} />
+          </FormField>
 
-      <View style={styles.dates}>
-        <View style={styles.dateField}>
-          <TextField
-            label="Date of birth"
-            testID="arrival-dob"
-            placeholder="DD/MM/YYYY"
-            optional
-            value={details.dateOfBirth}
-            keyboardType="number-pad"
-            inputMode="numeric"
-            maxLength={10}
-            onChangeText={(text) => update({ dateOfBirth: formatDateInput(text) })}
-            error={visible.dateOfBirth}
-          />
+          <View style={styles.dates}>
+            <View style={styles.dateField}>
+              <TextField
+                label="Date of birth"
+                testID="arrival-dob"
+                placeholder="DD/MM/YYYY"
+                value={details.dateOfBirth}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                maxLength={10}
+                onChangeText={(text) => update({ dateOfBirth: formatDateInput(text) })}
+                error={visible.dateOfBirth}
+                trailingIcon={<Icon name="calendar-outline" size="sm" color={theme.colors.text2} />}
+              />
+            </View>
+            <View style={styles.dateField}>
+              <TextField
+                label="Release date"
+                testID="arrival-release"
+                placeholder="DD/MM/YYYY"
+                required
+                value={details.releaseDate}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                maxLength={10}
+                onChangeText={(text) => update({ releaseDate: formatDateInput(text) })}
+                error={visible.releaseDate}
+                trailingIcon={<Icon name="calendar-outline" size="sm" color={theme.colors.text2} />}
+              />
+            </View>
+          </View>
         </View>
-        <View style={styles.dateField}>
-          <TextField
-            label="Release date"
-            testID="arrival-release"
-            placeholder="DD/MM/YYYY"
-            optional
-            value={details.releaseDate}
-            keyboardType="number-pad"
-            inputMode="numeric"
-            maxLength={10}
-            onChangeText={(text) => update({ releaseDate: formatDateInput(text) })}
-            error={visible.releaseDate}
-          />
-        </View>
-      </View>
-
-      <View style={styles.draftStatus} accessibilityLiveRegion="polite" testID="arrival-draft-status">
-        <Icon
-          name={autosave.status === 'error' ? 'alert-circle-outline' : 'checkmark'}
-          size="sm"
-          color={autosave.status === 'error' ? theme.colors.danger : theme.colors.textMuted}
-        />
-        <AppText variant="caption" tone={autosave.status === 'error' ? 'danger' : 'muted'}>
-          {draftLabel}
-        </AppText>
-      </View>
+      </Card>
     </PageLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  footerRow: { flexDirection: 'row', gap: theme.spacing.md },
-  footerButton: { flex: 1 },
-  dates: { flexDirection: 'row', gap: theme.spacing.md, flexWrap: 'wrap' },
-  dateField: { flex: 1, minWidth: theme.control.thumb * 2 },
-  draftStatus: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  flex: { flex: 1 },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.s3,
+    padding: theme.spacing.s4,
+    borderBottomWidth: theme.control.borderWidth,
+    borderBottomColor: theme.colors.line,
+  },
+  cardIcon: {
+    width: theme.control.iconBadge,
+    height: theme.control.iconBadge,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primarySoft,
+  },
+  fields: { padding: theme.spacing.s4, gap: theme.spacing.s5 },
+  // Side by side on phones; stacked only when large text makes each column too narrow.
+  dates: { flexDirection: 'row', gap: theme.spacing.s3, flexWrap: 'wrap' },
+  dateField: { flex: 1, minWidth: 140 },
+  draftStatus: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.s1 },
 });

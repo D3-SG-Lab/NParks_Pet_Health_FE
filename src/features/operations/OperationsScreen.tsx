@@ -1,76 +1,99 @@
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, View, type ScrollView } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { useSession } from '@/auth';
 import {
+  Pressable,
   ActionTile,
-  AppText,
   Avatar,
-  Button,
+  Banner,
   Card,
+  EmptyState,
   ErrorView,
   FadeIn,
   HeaderIconButton,
-  Icon,
+  LinkButton,
   ListRow,
-  LoadingView,
   PageLayout,
   ScreenHeader,
+  SearchField,
   SectionLabel,
+  SkeletonList,
   StatCard,
   StatusChip,
-  useToast,
+  type StatusTone,
 } from '@/components';
+import type { AlertKind } from '@/domain/types';
+import { AnimalPicker } from '@/features/animals/AnimalPicker';
+import { useNotifications } from '@/features/notifications/NotificationsProvider';
+import { AccountSheet } from '@/features/shell/AccountSheet';
+import { OfflineBanner } from '@/features/sync/OfflineBanner';
 import { theme } from '@/theme';
+import { formatTime, formatWeekdayDate, relativeTime, sessionFor } from '@/utils/dates';
+import { useNow } from '@/utils/useNow';
 
 import { useOperationsSummary } from './hooks';
 
-function greetingFor(hour: number): string {
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
-}
+const ALERT_CHIP: Record<AlertKind, { label: string; tone: StatusTone }> = {
+  review: { label: 'Review', tone: 'warning' },
+  open: { label: 'Open', tone: 'info' },
+  overdue: { label: 'Overdue', tone: 'danger' },
+};
 
-/** Wireframe 01: Operations home. Quick actions, today's monitoring, review banner and alerts. */
+/** Screen 2: Operations home (FE-004, FE-005). Quick actions, today's monitoring, review banner, alerts. */
 export function OperationsScreen() {
   const router = useRouter();
-  const toast = useToast();
-  const { session, role, signOut } = useSession();
+  const { session, role } = useSession();
+  const notifications = useNotifications();
   const summary = useOperationsSummary();
-  const [signingOut, setSigningOut] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
-  // Offsets for the bell button: the alerts block's position inside its wrapper plus the wrapper's own.
-  const sectionsY = useRef(0);
-  const alertsY = useRef(0);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const isOfficer = role === 'officer';
-  const name = session?.name?.trim();
-  const greeting = `${greetingFor(new Date().getHours())}${name ? `, ${name}` : ''}`;
+  const name = session?.name?.trim() || (isOfficer ? 'Officer' : 'Contractor');
+  const now = useNow(60_000);
   const data = summary.data;
-  const alertCount = data?.alerts.length ?? 0;
-
-  // Destinations that belong to other wireframes are not built yet; say so instead of doing nothing.
-  const notAvailable = (feature: string) => toast.show(`${feature} is not available yet.`, 'info');
 
   return (
     <PageLayout
       width="wide"
       edges={['top', 'left', 'right']}
-      scrollRef={scrollRef}
+      refreshing={summary.isRefetching}
+      onRefresh={() => void summary.refetch()}
+      banner={<OfflineBanner />}
       header={
         <ScreenHeader
-          eyebrow={greeting}
+          large
+          eyebrowIcon="time-outline"
+          eyebrow={`${formatWeekdayDate(now)} · ${sessionFor(new Date(now))} session`}
           title="Operations"
           trailing={
-            <HeaderIconButton
-              testID="operations-bell"
-              icon="notifications-outline"
-              label="Alerts"
-              badge={alertCount}
-              onPress={() => 
-                scrollRef.current?.scrollTo({ y: sectionsY.current + alertsY.current, animated: true })
-              }
+            <>
+              <HeaderIconButton
+                testID="operations-bell"
+                icon="notifications-outline"
+                label="Notifications"
+                badge={notifications.unread || (data?.alerts.length ? 1 : 0)}
+                onPress={notifications.openCentre}
+              />
+              <Pressable
+                testID="operations-account"
+                accessibilityRole="button"
+                accessibilityLabel={`Account, ${name}`}
+                onPress={() => setAccountOpen(true)}
+                hitSlop={theme.spacing.s1}
+              >
+                <Avatar name={name} kind="person" />
+              </Pressable>
+            </>
+          }
+          below={
+            <SearchField
+              testID="operations-search"
+              value=""
+              placeholder="Search kennel code, name or microchip"
+              onPress={() => setSearchOpen(true)}
             />
           }
         />
@@ -83,136 +106,126 @@ export function OperationsScreen() {
             <ActionTile
               testID="operations-new-arrival"
               label="New Arrival"
+              description="Register & baseline exam"
               icon="add"
+              variant="primary"
               onPress={() => router.navigate('/new-arrival')}
             />
           ) : null}
           <ActionTile
             testID="operations-new-observation"
             label="New Health Observation"
+            description="Photo, video or text"
             icon="camera-outline"
-            variant="primary"
-            onPress={() => notAvailable('New Health Observation')}
+            variant={isOfficer ? 'secondary' : 'primary'}
+            onPress={() => router.push('/new-observation')}
           />
         </View>
       </View>
 
       {summary.isPending ? (
-        <View style={styles.state}>
-          <LoadingView label="Loading operations" testID="operations-loading" />
-        </View>
+        <SkeletonList label="Loading operations" rows={3} testID="operations-loading" />
       ) : summary.isError || !data ? (
-        <ErrorView
-          testID="operations-error"
-          message="We couldn't load today's monitoring. Check your connection and try again."
-          onRetry={() => void summary.refetch()}
-        />
+        <ErrorView testID="operations-error" message="Check your connection and try again." onRetry={() => void summary.refetch()} />
       ) : (
-        <FadeIn>
-          <View
-            style={styles.sections}
-            onLayout={(event) => {
-              sectionsY.current = event.nativeEvent.layout.y;
-            }}
-          >
-            <View style={styles.section}>
-              <SectionLabel>{'Today’s monitoring'}</SectionLabel>
-              <View style={styles.stats}>
-                <StatCard testID="stat-active-pets" value={data.activePets} label="Active pets" />
-                <StatCard testID="stat-checks-due" value={data.checksDueAm} label="Checks due · AM" />
-                <StatCard testID="stat-open-cases" value={data.openCases} label="Open cases" />
-              </View>
+        <FadeIn style={styles.sections}>
+          <View style={styles.section}>
+            <SectionLabel trailing={`Updated ${formatTime(data.updatedAt)} · pull to refresh`}>{'Today’s monitoring'}</SectionLabel>
+            <View style={styles.stats}>
+              <StatCard
+                testID="stat-active-pets"
+                value={data.activePets}
+                label="Active pets"
+                accessibilityHint="Opens the animal list"
+                onPress={() => setSearchOpen(true)}
+              />
+              <StatCard
+                testID="stat-checks-due"
+                value={data.checksDue}
+                label={`Checks due · ${data.session}`}
+                progress={data.activePets ? (data.activePets - data.checksDue) / data.activePets : 0}
+                accessibilityHint="Opens daily inspection"
+                onPress={() => router.navigate('/daily-inspection')}
+              />
+              <StatCard
+                testID="stat-open-cases"
+                value={data.openCases}
+                label="Open cases"
+                tone={data.openCases > 0 ? 'attention' : 'default'}
+                accessibilityHint="Opens health cases"
+                onPress={() => router.navigate('/cases')}
+              />
             </View>
+          </View>
 
-            <Pressable
+          {isOfficer && data.observationsNeedingReview > 0 ? (
+            <Banner
               testID="operations-review-banner"
-              accessibilityRole="button"
-              accessibilityLabel={`${data.observationsNeedingReview} observations need manual review`}
-              onPress={() => notAvailable('The review queue')}
-              style={({ pressed, focused }: { pressed: boolean; focused?: boolean }) => [
-                styles.review,
-                pressed && styles.pressed,
-                focused && styles.focused,
-              ]}
-            >
-              <AppText bold style={styles.reviewText}>
-                {`${data.observationsNeedingReview} observations need manual review`}
-              </AppText>
-              <Icon name="chevron-forward" color={theme.colors.info} />
-            </Pressable>
+              kind="warning"
+              iconTile
+              icon="sparkles-outline"
+              title={reviewText(data.observationsNeedingReview)}
+              message="AI unmatched or low confidence"
+              accessibilityHint="Opens the review queue"
+              onPress={() => router.push('/review-queue')}
+            />
+          ) : null}
 
-            <View
-              style={styles.section}
-              onLayout={(event) => {
-                alertsY.current = event.nativeEvent.layout.y;
-              }}
-            >
-              <SectionLabel>Alerts</SectionLabel>
-              {data.alerts.length === 0 ? (
-                <Card testID="operations-no-alerts">
-                  <AppText bold center>
-                    No alerts right now
-                  </AppText>
-                  <AppText tone="muted" center>
-                    New alerts about reviews, follow-ups and reopened cases will appear here.
-                  </AppText>
-                </Card>
-              ) : (
-                data.alerts.map((alert) => (
-                  <ListRow
-                    key={alert.id}
-                    testID={`alert-${alert.id}`}
-                    leading={<Avatar name={alert.animalName} />}
-                    title={`${alert.kennel} ${alert.animalName}`}
-                    subtitle={alert.message}
-                    accessibilityHint="Opens health cases"
-                    trailing={
-                      <StatusChip
-                        label={alert.kind === 'review' ? 'Review' : 'Open'}
-                        tone={alert.kind === 'review' ? 'review' : 'attention'}
-                      />
-                    }
-                    onPress={() => router.navigate('/cases')}
-                  />
-                ))
-              )}
-            </View>
+          <View style={styles.section}>
+            <SectionLabel trailing={<LinkButton label="View all" accessibilityLabel="View all cases" onPress={() => router.navigate('/cases')} />}>
+              Alerts
+            </SectionLabel>
+            {data.alerts.length === 0 ? (
+              <EmptyState testID="operations-no-alerts" icon="checkmark-done-outline" title="No alerts right now" message="Reviews, follow-ups and reopened cases will appear here." />
+            ) : (
+              <Card padded={false}>
+                {data.alerts.map((alert, index) => {
+                  const chip = ALERT_CHIP[alert.kind];
+                  return (
+                    <ListRow
+                      key={alert.id}
+                      testID={`alert-${alert.id}`}
+                      variant="flat"
+                      divider={index < data.alerts.length - 1}
+                      leading={<Avatar name={alert.animalName} />}
+                      code={alert.kennel}
+                      title={alert.animalName}
+                      body={alert.message}
+                      subtitle={alert.meta ?? relativeTime(alert.at, now)}
+                      accessibilityHint={alert.caseId ? 'Opens the case' : 'Opens the inspection'}
+                      trailing={<StatusChip label={chip.label} tone={chip.tone} />}
+                      onPress={() =>
+                        alert.caseId
+                          ? router.push({ pathname: '/case/[id]', params: { id: alert.caseId } })
+                          : router.push({ pathname: '/inspect/[animalId]', params: { animalId: alert.animalId } })
+                      }
+                    />
+                  );
+                })}
+              </Card>
+            )}
           </View>
         </FadeIn>
       )}
 
-      <Button
-        label="Sign out"
-        icon="log-out-outline"
-        variant="secondary"
-        testID="operations-signout"
-        loading={signingOut}
-        onPress={() => {
-          setSigningOut(true);
-          void signOut();
-        }}
+      <AnimalPicker
+        visible={searchOpen}
+        title="Find an animal"
+        onClose={() => setSearchOpen(false)}
+        onSelect={(animal) => router.push({ pathname: '/animal/[id]', params: { id: animal.id } })}
       />
+      <AccountSheet visible={accountOpen} onClose={() => setAccountOpen(false)} />
     </PageLayout>
   );
 }
 
+function reviewText(count: number): string {
+  return `${count} ${count === 1 ? 'observation needs' : 'observations need'} review`;
+}
+
 const styles = StyleSheet.create({
-  sections: { gap: theme.spacing.lg },
-  section: { gap: theme.spacing.md },
-  actions: { flexDirection: 'row', gap: theme.spacing.md },
-  stats: { flexDirection: 'row', gap: theme.spacing.md },
-  state: { minHeight: theme.control.thumb * 3 },
-  review: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: theme.spacing.md,
-    minHeight: theme.control.minTouch,
-    padding: theme.spacing.lg,
-    borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.infoSurface,
-  },
-  reviewText: { flex: 1, color: theme.colors.info },
-  pressed: { opacity: 0.85 },
-  focused: { borderWidth: theme.control.focusWidth, borderColor: theme.colors.focus },
+  sections: { gap: theme.spacing.s6 },
+  section: { gap: theme.spacing.s3 },
+  actions: { flexDirection: 'row', gap: theme.spacing.s3 },
+  stats: { flexDirection: 'row', gap: theme.spacing.s2 },
 });

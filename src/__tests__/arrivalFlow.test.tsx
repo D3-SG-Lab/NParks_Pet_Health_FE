@@ -8,7 +8,9 @@ import { ArrivalExamScreen } from '@/features/arrivals/ArrivalExamScreen';
 import { saveArrivalDraft } from '@/features/arrivals/arrivalApi';
 import { NewArrivalScreen } from '@/features/arrivals/NewArrivalScreen';
 import { OperationsScreen } from '@/features/operations/OperationsScreen';
+import { NotificationsProvider } from '@/features/notifications/NotificationsProvider';
 import { mockDb, resetMockDb } from '@/mock/db';
+import { sessionFor } from '@/utils/dates';
 
 const mockRouter = {
   navigate: jest.fn(),
@@ -33,6 +35,7 @@ jest.mock('@/auth', () => ({
     session: { name: 'Aisha Rahman' },
     signOut: jest.fn(async () => undefined),
   }),
+  useActor: () => ({ id: 'user-1', name: 'Aisha Rahman', role: mockRole }),
 }));
 
 function renderWithProviders(ui: ReactElement, client = new QueryClient({ defaultOptions: { // gcTime Infinity: no 5 minute cache timers, so Jest can exit as soon as the tests finish.
@@ -44,7 +47,9 @@ function renderWithProviders(ui: ReactElement, client = new QueryClient({ defaul
         initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}
       >
         <QueryClientProvider client={client}>
-          <ToastProvider>{ui}</ToastProvider>
+          <ToastProvider>
+            <NotificationsProvider>{ui}</NotificationsProvider>
+          </ToastProvider>
         </QueryClientProvider>
       </SafeAreaProvider>,
     ),
@@ -65,27 +70,40 @@ beforeEach(() => {
 describe('Operations (wireframe 01)', () => {
   it('shows counts and alerts from the shared mock data', async () => {
     renderWithProviders(<OperationsScreen />);
+    const session = sessionFor();
+    const due = mockDb.animals.filter((a) => (session === 'AM' ? a.today.amInspection : a.today.pmInspection) === 'due').length;
     expect(await screen.findByTestId('stat-active-pets')).toHaveTextContent(/^8/);
-    expect(screen.getByTestId('stat-checks-due')).toHaveTextContent(/^3/);
+    expect(screen.getByTestId('stat-checks-due')).toHaveTextContent(new RegExp(`^${due}Checks due · ${session}`));
     expect(screen.getByTestId('stat-open-cases')).toHaveTextContent(/^3/);
-    expect(screen.getByText('3 observations need manual review')).toBeTruthy();
-    expect(screen.getByText('KC2-2 Yang Yang')).toBeTruthy();
+    expect(screen.getByText('4 observations need review')).toBeTruthy();
+    expect(screen.getByLabelText(/^KC2-2 Yang Yang\. GI observation/)).toBeTruthy();
     expect(screen.getByText('GI observation requires review')).toBeTruthy();
-    expect(screen.getByText(/, Aisha Rahman$/)).toBeTruthy();
+    expect(screen.getByText('10 min ago')).toBeTruthy();
+    expect(screen.getByText(/· (AM|PM) session$/)).toBeTruthy();
   });
 
-  it('New Arrival opens the arrival flow; alerts open Cases', async () => {
+  it('New Arrival opens the arrival flow; FE-005: tapping an alert opens its case', async () => {
     renderWithProviders(<OperationsScreen />);
     fireEvent.press(screen.getByTestId('operations-new-arrival'));
     expect(mockRouter.navigate).toHaveBeenCalledWith('/new-arrival');
     fireEvent.press(await screen.findByTestId('alert-alert-1'));
-    expect(mockRouter.navigate).toHaveBeenCalledWith('/cases');
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/case/[id]', params: { id: 'C-2026-0142' } });
   });
 
-  it('out-of-scope CTAs give feedback instead of doing nothing', async () => {
+  it('opens New Health Observation and, for officers, the review queue', async () => {
     renderWithProviders(<OperationsScreen />);
     fireEvent.press(screen.getByTestId('operations-new-observation'));
-    expect(await screen.findByTestId('toast')).toHaveTextContent(/not available yet/);
+    expect(mockRouter.push).toHaveBeenCalledWith('/new-observation');
+    fireEvent.press(await screen.findByTestId('operations-review-banner'));
+    expect(mockRouter.push).toHaveBeenCalledWith('/review-queue');
+  });
+
+  it('FE-005: stat tiles open their lists', async () => {
+    renderWithProviders(<OperationsScreen />);
+    fireEvent.press(await screen.findByTestId('stat-open-cases'));
+    expect(mockRouter.navigate).toHaveBeenCalledWith('/cases');
+    fireEvent.press(screen.getByTestId('stat-checks-due'));
+    expect(mockRouter.navigate).toHaveBeenCalledWith('/daily-inspection');
   });
 
   it('hides New Arrival from contractors', async () => {
@@ -93,7 +111,10 @@ describe('Operations (wireframe 01)', () => {
     renderWithProviders(<OperationsScreen />);
     await screen.findByTestId('stat-active-pets');
     expect(screen.queryByTestId('operations-new-arrival')).toBeNull();
+    expect(screen.queryByTestId('operations-review-banner')).toBeNull();
     expect(screen.getByTestId('operations-new-observation')).toBeTruthy();
+    // Contractors only count the animals in their assigned kennels (KC2-1 – KC2-6).
+    expect(screen.getByTestId('stat-active-pets')).toHaveTextContent(/^6/);
   });
 });
 
@@ -120,6 +141,7 @@ describe('New Arrival (wireframe 02)', () => {
     await pickOption('arrival-country', 'JP');
     fireEvent.press(screen.getByTestId('arrival-sex-Female'));
     fireEvent.changeText(screen.getByTestId('arrival-microchip'), '982000123450002');
+    fireEvent.changeText(screen.getByTestId('arrival-release'), '19012099');
     fireEvent.press(screen.getByTestId('arrival-continue'));
     expect(await screen.findByText('This microchip number is already registered to an active stay.')).toBeTruthy();
     expect(mockRouter.navigate).not.toHaveBeenCalledWith('/arrival-exam');
@@ -133,17 +155,18 @@ describe('New Arrival (wireframe 02)', () => {
     fireEvent.press(screen.getByTestId('arrival-sex-Female'));
     fireEvent.changeText(screen.getByTestId('arrival-microchip'), '982000999999991');
     fireEvent.changeText(screen.getByTestId('arrival-dob'), '05042023');
+    fireEvent.changeText(screen.getByTestId('arrival-release'), '19012099');
     expect(screen.getByTestId('arrival-dob').props.value).toBe('05/04/2023');
     fireEvent.press(screen.getByTestId('arrival-continue'));
     await waitFor(() => expect(mockRouter.navigate).toHaveBeenCalledWith('/arrival-exam'));
     expect(mockDb.draft?.details).toMatchObject({ name: 'Nala', kennel: 'KC2-7', countryCode: 'JP', sex: 'Female' });
   });
 
-  it('Save draft stores the form and returns to Operations', async () => {
+  it('saves the draft when leaving with Back', async () => {
     renderWithProviders(<NewArrivalScreen />);
     fireEvent.changeText(await screen.findByTestId('arrival-name'), 'Half done');
-    fireEvent.press(screen.getByTestId('arrival-save-draft'));
-    await waitFor(() => expect(mockRouter.navigate).toHaveBeenCalledWith('/'));
+    fireEvent.press(screen.getByTestId('header-back'));
+    expect(await screen.findByTestId('toast')).toHaveTextContent(/Draft saved/);
     expect(mockDb.draft?.details.name).toBe('Half done');
   });
 
@@ -163,7 +186,7 @@ describe('Arrival Exam (wireframe 03)', () => {
     microchip: '982000999999991',
     sex: 'Female' as const,
     dateOfBirth: '',
-    releaseDate: '',
+    releaseDate: '19/01/2099',
   };
 
   it('shows a way back when there is no arrival in progress', async () => {
@@ -176,9 +199,9 @@ describe('Arrival Exam (wireframe 03)', () => {
   it('requires vet, weight and a note for Abnormal findings', async () => {
     await saveArrivalDraft({ details });
     renderWithProviders(<ArrivalExamScreen />);
-    expect(await screen.findByTestId('exam-animal-summary')).toHaveTextContent(/KC2-7 · Cat · Female/);
+    expect(await screen.findByTestId('exam-animal-summary')).toHaveTextContent(/KC2-7 · Nala · Cat/);
     fireEvent.press(screen.getByTestId('exam-eyes-toggle-abnormal'));
-    expect(screen.getByText('Note required')).toBeTruthy();
+    expect(screen.getByText('Note (required)')).toBeTruthy();
     fireEvent.press(screen.getByTestId('exam-complete'));
     expect(await screen.findByText('Select the examining vet.')).toBeTruthy();
     expect(screen.getByText('Enter the weight in kg.')).toBeTruthy();
@@ -200,7 +223,7 @@ describe('Arrival Exam (wireframe 03)', () => {
     await waitFor(() => expect(mockRouter.navigate).toHaveBeenCalledWith('/'));
 
     expect(mockDb.animals).toHaveLength(9);
-    expect(mockDb.exams[0]?.findings.eyes).toMatchObject({ abnormal: true, note: 'Mild discharge, left eye' });
+    expect(mockDb.exams.at(-1)?.findings.eyes).toMatchObject({ abnormal: true, note: 'Mild discharge, left eye' });
     expect(mockDb.draft).toBeNull();
     expect(await screen.findByTestId('toast')).toHaveTextContent(/Nala is now under active monitoring in KC2-7/);
     // Operations data was invalidated so the new animal is counted.

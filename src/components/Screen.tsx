@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   column: {
     flexGrow: 1,
     width: '100%',
-    padding: theme.spacing.xl,
+    padding: theme.spacing.s6,
   },
-  columnRoomy: { paddingVertical: theme.spacing.xxxl },
+  columnRoomy: { paddingVertical: theme.spacing.s12 },
 });

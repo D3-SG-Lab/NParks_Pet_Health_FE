@@ -1,14 +1,15 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { AppText, Button, Icon, SegmentedControl, TextField, type SegmentOption } from '@/components';
+import { AppText, Icon, MediaThumb, SegmentedControl, TextField, type SegmentOption, Pressable } from '@/components';
 import type { ExamFinding } from '@/domain/types';
-import { theme } from '@/theme';
+import { focusRing, theme } from '@/theme';
 
 type FindingValue = 'normal' | 'abnormal';
 
-const options: readonly SegmentOption<FindingValue>[] = [
-  { value: 'normal', label: 'Normal' },
-  { value: 'abnormal', label: 'Abnormal', tone: 'attention' },
+/** C3 exam toggle: Normal by default (✓), Abnormal fills with --abnormal (!). */
+export const EXAM_TOGGLE_OPTIONS: readonly SegmentOption<FindingValue>[] = [
+  { value: 'normal', label: 'Normal', selectedIcon: 'checkmark' },
+  { value: 'abnormal', label: 'Abnormal', tone: 'abnormal', selectedIcon: 'alert' },
 ];
 
 interface ExamFindingRowProps {
@@ -19,35 +20,43 @@ interface ExamFindingRowProps {
   noteError?: string;
   /** Adds a mock photo attachment. Real capture and upload follow FE-011 and FE-024. */
   onAddPhoto: () => void;
+  /** Hairline above the row (all but the first). */
+  divider?: boolean;
   testID: string;
 }
 
-/** One physical-exam system: Normal / Abnormal. Abnormal reveals a required note and photo evidence. */
-export function ExamFindingRow({ label, finding, onChange, noteError, onAddPhoto, testID }: ExamFindingRowProps) {
+/**
+ * One physical-exam system inside the exam card: label left, Normal/Abnormal right. Abnormal tints the row
+ * --abnormal-soft and reveals a required note and photos (screen 6).
+ */
+export function ExamFindingRow({ label, finding, onChange, noteError, onAddPhoto, divider = false, testID }: ExamFindingRowProps) {
+  const abnormal = finding.abnormal;
   return (
-    <View style={styles.row} testID={testID}>
+    <View style={[styles.row, divider && styles.divider, abnormal && styles.abnormal]} testID={testID}>
       <View style={styles.main}>
-        <AppText bold style={styles.label}>
+        <AppText variant={abnormal ? 'titleS' : 'body'} tone={abnormal ? 'abnormal' : 'default'} style={styles.label}>
           {label}
         </AppText>
         <View style={styles.toggle}>
           <SegmentedControl
             label={label}
+            size="sm"
             testID={`${testID}-toggle`}
-            options={options}
-            value={finding.abnormal ? 'abnormal' : 'normal'}
+            options={EXAM_TOGGLE_OPTIONS}
+            value={abnormal ? 'abnormal' : 'normal'}
             onChange={(value) => onChange({ ...finding, abnormal: value === 'abnormal' })}
           />
         </View>
       </View>
 
-      {finding.abnormal ? (
-        <View style={styles.details}>
-          <AppText variant="caption" bold style={styles.required}>
-            Note required
+      {abnormal ? (
+        <View style={styles.panel}>
+          <AppText variant="label" bold tone="abnormal">
+            Note (required)
           </AppText>
           <TextField
             label={`${label} finding`}
+            hideLabel
             testID={`${testID}-note`}
             placeholder="Describe the finding"
             multiline
@@ -57,32 +66,32 @@ export function ExamFindingRow({ label, finding, onChange, noteError, onAddPhoto
           />
           <View style={styles.photos}>
             {finding.photos.map((photo, index) => (
-              <View key={photo.id} style={styles.thumb}>
-                <Icon name="image-outline" color={theme.colors.textMuted} />
-                <AppText variant="caption" tone="muted">{`Photo ${index + 1}`}</AppText>
+              <View key={photo.id}>
+                <MediaThumb kind="photo" size="md" accessibilityLabel={`Photo ${index + 1} of ${label}`} />
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Remove photo ${index + 1} from ${label}`}
-                  hitSlop={theme.spacing.lg}
+                  hitSlop={theme.spacing.s3}
                   onPress={() => onChange({ ...finding, photos: finding.photos.filter((p) => p.id !== photo.id) })}
                   style={styles.remove}
                 >
-                  <Icon name="close-circle" size="sm" color={theme.colors.textMuted} />
+                  <Icon name="close-circle" size="sm" color={theme.colors.text2} />
                 </Pressable>
               </View>
             ))}
-            <Button
-              label="Add photo"
-              icon="camera-outline"
-              variant="secondary"
+            <Pressable
               testID={`${testID}-add-photo`}
+              accessibilityRole="button"
               accessibilityLabel={`Add photo for ${label}`}
               onPress={onAddPhoto}
-            />
+              style={({ pressed, focused }: { pressed: boolean; focused?: boolean }) => [styles.addTile, pressed && styles.pressed, focused && focusRing]}
+            >
+              <Icon name="camera-outline" size="sm" color={theme.colors.abnormal} />
+              <AppText variant="caption" tone="abnormal">
+                Add
+              </AppText>
+            </Pressable>
           </View>
-          <AppText variant="caption" tone="muted">
-            Demo only: photos are placeholders and are not uploaded or saved to the gallery.
-          </AppText>
         </View>
       ) : null}
     </View>
@@ -90,28 +99,27 @@ export function ExamFindingRow({ label, finding, onChange, noteError, onAddPhoto
 }
 
 const styles = StyleSheet.create({
-  row: {
-    padding: theme.spacing.lg,
-    gap: theme.spacing.md,
-    borderBottomWidth: theme.control.borderWidth,
-    borderBottomColor: theme.colors.divider,
-  },
-  main: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, flexWrap: 'wrap' },
-  label: { flexGrow: 1, flexBasis: theme.control.thumb * 1.5 },
-  toggle: { flexGrow: 1, flexBasis: theme.control.thumb * 3 },
-  details: { gap: theme.spacing.md },
-  required: { color: theme.colors.warning },
-  photos: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: theme.spacing.md },
-  thumb: {
+  row: { paddingHorizontal: theme.spacing.s4, paddingVertical: theme.spacing.s2, gap: theme.spacing.s3 },
+  divider: { borderTopWidth: theme.control.borderWidth, borderTopColor: theme.colors.line },
+  abnormal: { backgroundColor: theme.colors.abnormalSoft, paddingBottom: theme.spacing.s4 },
+  // Label and toggle share a row on phones; they wrap only with very large text.
+  main: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.s3, flexWrap: 'wrap', minHeight: theme.control.minTouch + 8 },
+  label: { flexGrow: 1, flexBasis: 90 },
+  toggle: { flexGrow: 0, flexBasis: 216, maxWidth: '100%' },
+  panel: { gap: theme.spacing.s2 },
+  photos: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: theme.spacing.s2 },
+  remove: { position: 'absolute', top: -theme.spacing.s1, right: -theme.spacing.s1 },
+  addTile: {
     width: theme.control.thumb,
     height: theme.control.thumb,
-    borderRadius: theme.radius.md,
-    borderWidth: theme.control.borderWidth,
+    gap: 2,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
+    borderColor: theme.colors.abnormal,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  remove: { position: 'absolute', top: -theme.spacing.xs, right: -theme.spacing.xs },
+  pressed: { backgroundColor: theme.colors.abnormalSoft },
 });

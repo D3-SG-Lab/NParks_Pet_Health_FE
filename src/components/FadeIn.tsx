@@ -24,6 +24,6 @@ export function FadeIn({ children, delay = 0, style }: FadeInProps) {
     return () => animation.stop();
   }, [progress, delay]);
 
-  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [theme.spacing.md, 0] });
+  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [theme.spacing.s3, 0] });
   return <Animated.View style={[style, { opacity: progress, transform: [{ translateY }] }]}>{children}</Animated.View>;
 }

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 
-import { theme } from '@/theme';
+import { focusRing, inputStates, theme } from '@/theme';
 
 import { AppText } from './AppText';
+import { Pressable } from './Pressable';
 import { BottomSheet } from './BottomSheet';
 import { FormField } from './FormField';
 import { Icon } from './Icon';
@@ -23,16 +24,23 @@ interface SelectFieldProps {
   value: string | null;
   onChange: (next: string) => void;
   error?: string;
+  required?: boolean;
   helper?: string;
   /** Shows a spinner instead of the chevron while options load. */
   loading?: boolean;
   /** Message shown inside the sheet when options failed to load. */
   loadError?: string;
   onRetry?: () => void;
+  /** Plex Mono value (kennel codes). */
+  mono?: boolean;
+  disabled?: boolean;
   testID?: string;
 }
 
-/** Cross-platform dropdown: a field that opens a bottom sheet list (works the same on iOS, Android and web). */
+/**
+ * C2 dropdown: closed (chevron down), open (focused edge + halo, chevron up), error, disabled. Options open in a
+ * bottom sheet (C8: sheets for pickers on mobile); the selected option is --primary-soft with a check.
+ */
 export function SelectField({
   label,
   placeholder,
@@ -40,38 +48,42 @@ export function SelectField({
   value,
   onChange,
   error,
+  required,
   helper,
   loading = false,
   loadError,
   onRetry,
+  mono = false,
+  disabled = false,
   testID,
 }: SelectFieldProps) {
   const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.value === value);
 
   return (
-    <FormField label={label} error={error} helper={helper}>
+    <FormField label={label} required={required} disabled={disabled} error={error} helper={helper}>
       <Pressable
         testID={testID}
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${selected ? selected.label : placeholder}`}
         accessibilityHint="Opens a list of choices"
-        accessibilityState={{ expanded: open }}
+        accessibilityState={{ expanded: open, disabled }}
+        disabled={disabled}
         onPress={() => setOpen(true)}
         style={({ pressed, focused }: { pressed: boolean; focused?: boolean }) => [
           styles.field,
           pressed && styles.pressed,
-          focused && styles.focused,
-          error ? styles.invalid : null,
+          disabled && inputStates.disabled,
+          error ? inputStates.invalid : focused || open ? inputStates.focused : null,
         ]}
       >
-        <AppText style={styles.value} tone={selected ? 'default' : 'muted'}>
+        <AppText variant={selected && mono ? 'mono' : 'body'} style={[styles.value, selected && mono && styles.monoValue]} tone={selected && !disabled ? 'default' : 'subtle'}>
           {selected ? selected.label : placeholder}
         </AppText>
         {loading ? (
-          <ActivityIndicator color={theme.colors.textMuted} />
+          <ActivityIndicator color={theme.colors.text2} />
         ) : (
-          <Icon name="chevron-down" color={theme.colors.textMuted} />
+          <Icon name={open ? 'chevron-up' : 'chevron-down'} size="sm" color={disabled ? theme.colors.text3 : open ? theme.colors.primary : theme.colors.text2} />
         )}
       </Pressable>
 
@@ -111,14 +123,17 @@ export function SelectField({
                   }}
                   style={({ pressed, focused }: { pressed: boolean; focused?: boolean }) => [
                     styles.option,
+                    isSelected && styles.optionSelected,
                     pressed && styles.optionPressed,
-                    focused && styles.focused,
+                    focused && focusRing,
                   ]}
                 >
                   <View style={styles.optionText}>
-                    <AppText bold={isSelected}>{item.label}</AppText>
+                    <AppText variant={mono ? 'mono' : 'body'} bold={isSelected} style={mono ? styles.monoValue : undefined}>
+                      {item.label}
+                    </AppText>
                     {item.description ? (
-                      <AppText variant="caption" tone="muted">
+                      <AppText variant="bodyS" tone="muted">
                         {item.description}
                       </AppText>
                     ) : null}
@@ -140,24 +155,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: theme.spacing.md,
+    gap: theme.spacing.s3,
   },
   value: { flex: 1 },
-  pressed: { opacity: 0.85 },
-  focused: { borderColor: theme.colors.focus, borderWidth: theme.control.focusWidth },
-  invalid: { borderColor: theme.colors.danger },
+  pressed: { backgroundColor: theme.colors.surface2 },
+  monoValue: { fontSize: theme.text.body.fontSize, lineHeight: theme.text.body.lineHeight },
   option: {
     minHeight: theme.control.minTouch,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-    borderBottomWidth: theme.control.borderWidth,
-    borderBottomColor: theme.colors.divider,
+    gap: theme.spacing.s3,
+    paddingVertical: theme.spacing.s3,
+    paddingHorizontal: theme.spacing.s3,
+    borderRadius: theme.radius.md,
   },
-  optionPressed: { backgroundColor: theme.colors.background },
-  optionText: { flex: 1, gap: theme.spacing.xs },
-  message: { paddingVertical: theme.spacing.lg, gap: theme.spacing.md },
+  optionSelected: { backgroundColor: theme.colors.primarySoft },
+  optionPressed: { backgroundColor: theme.colors.surface2 },
+  optionText: { flex: 1, gap: theme.spacing.s1 },
+  message: { paddingVertical: theme.spacing.s4, gap: theme.spacing.s3 },
   retry: { minHeight: theme.control.minTouch, justifyContent: 'center' },
-  retryText: { color: theme.colors.info },
+  retryText: { color: theme.colors.primary },
 });

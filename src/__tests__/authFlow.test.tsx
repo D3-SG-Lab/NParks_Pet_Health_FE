@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useSession } from '@/auth';
-import { AppText } from '@/components';
+import { AppText, Button } from '@/components';
 import { env } from '@/config/env';
 import { SignInScreen } from '@/features/auth/SignInScreen';
-import { OperationsPlaceholder } from '@/features/shell/OperationsPlaceholder';
 
 jest.mock('@/auth/tokenStorage', () => ({
   loadSession: jest.fn(async () => null),
@@ -23,7 +23,13 @@ jest.mock('@/auth/biometrics', () => ({
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const storage = require('@/auth/tokenStorage') as { saveSession: jest.Mock; clearSession: jest.Mock };
+const storage = require('@/auth/tokenStorage') as {
+  saveSession: jest.Mock;
+  clearSession: jest.Mock;
+  loadBiometricPreference: jest.Mock;
+};
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const biometrics = require('@/auth/biometrics') as { isBiometricSupported: jest.Mock };
 
 function Probe() {
   const { status, role } = useSession();
@@ -32,12 +38,14 @@ function Probe() {
 
 function wrap(children: ReactNode, client = new QueryClient()) {
   return render(
+    <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
     <QueryClientProvider client={client}>
       <AuthProvider>
         <Probe />
         {children}
       </AuthProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
+    </SafeAreaProvider>,
   );
 }
 
@@ -47,21 +55,21 @@ describe('sign-in and session (mock mode, development)', () => {
   });
   beforeEach(() => jest.clearAllMocks());
 
-  it('FE-003: shows title, Sign in as, both buttons and the MFA note', async () => {
+  it('FE-003: shows title, the two sign-in choices and the MFA note', async () => {
     wrap(<SignInScreen />);
     await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedOut:none'));
     expect(screen.getByText('AQC Animal Health')).toBeTruthy();
-    expect(screen.getByText('Sign in as')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'AVS / NParks officer' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Contractor' })).toBeTruthy();
-    expect(screen.getByText(/Multi-factor authentication required/)).toBeTruthy();
+    expect(screen.getByText('CHOOSE HOW YOU SIGN IN')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^AVS Officer/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Contractor/ })).toBeTruthy();
+    expect(screen.getByText(/Multi-factor authentication is required/)).toBeTruthy();
     expect(screen.getByTestId('signin-mock')).toBeTruthy();
   });
 
   it('FE-003/FE-004: officer and contractor can sign in and the role is exposed', async () => {
     wrap(<SignInScreen />);
     await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedOut:none'));
-    fireEvent.press(screen.getByRole('button', { name: 'AVS / NParks officer' }));
+    fireEvent.press(screen.getByRole('button', { name: /^AVS Officer/ }));
     await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedIn:officer'));
     expect(storage.saveSession).toHaveBeenCalledTimes(1);
   });
@@ -69,7 +77,7 @@ describe('sign-in and session (mock mode, development)', () => {
   it('FE-003: contractor sign-in yields the contractor role', async () => {
     wrap(<SignInScreen />);
     await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedOut:none'));
-    fireEvent.press(screen.getByRole('button', { name: 'Contractor' }));
+    fireEvent.press(screen.getByRole('button', { name: /^Contractor/ }));
     await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedIn:contractor'));
   });
 
@@ -79,12 +87,12 @@ describe('sign-in and session (mock mode, development)', () => {
     wrap(
       <>
         <SignInScreen />
-        <OperationsPlaceholder />
+        <SignOutButton />
       </>,
       client,
     );
     await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedOut:none'));
-    fireEvent.press(screen.getByRole('button', { name: 'Contractor' }));
+    fireEvent.press(screen.getByRole('button', { name: /^Contractor/ }));
     await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedIn:contractor'));
 
     fireEvent.press(screen.getByTestId('operations-signout'));
@@ -93,3 +101,33 @@ describe('sign-in and session (mock mode, development)', () => {
     expect(client.getQueryData(['pets'])).toBeUndefined();
   });
 });
+
+describe('development auth bypass', () => {
+  beforeAll(() => {
+    env.authMode = 'mock';
+  });
+  beforeEach(() => jest.clearAllMocks());
+  afterEach(() => {
+    env.authBypassRole = undefined;
+  });
+
+  it('starts signed in as the configured role without a sign-in', async () => {
+    env.authBypassRole = 'officer';
+    wrap(null);
+    await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedIn:officer'));
+  });
+
+  it('skips the biometric unlock', async () => {
+    env.authBypassRole = 'contractor';
+    storage.loadBiometricPreference.mockResolvedValueOnce(true);
+    biometrics.isBiometricSupported.mockResolvedValueOnce(true);
+    wrap(null);
+    await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedIn:contractor'));
+  });
+});
+
+/** Signs out the way the account sheet does. */
+function SignOutButton() {
+  const { signOut } = useSession();
+  return <Button label="Sign out" onPress={() => void signOut()} testID="operations-signout" />;
+}

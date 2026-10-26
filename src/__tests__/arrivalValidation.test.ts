@@ -10,11 +10,11 @@ const valid: ArrivalDetailsInput = {
   microchip: '982000999999999',
   sex: 'Female',
   dateOfBirth: '',
-  releaseDate: '',
+  releaseDate: '19/01/2027',
 };
 
 describe('arrival details validation (wireframe 02)', () => {
-  it('accepts a complete form with optional dates left empty', () => {
+  it('accepts a complete form with the optional date of birth left empty', () => {
     expect(validateDetails(valid, '2026-10-21')).toEqual({});
   });
 
@@ -67,5 +67,23 @@ describe('date helpers', () => {
     expect(parseDdMmYyyy('29/02/2023')).toBeNull();
     expect(formatDateInput('01022020')).toBe('01/02/2020');
     expect(formatDateInput('0102')).toBe('01/02');
+  });
+});
+
+describe('release date (21 Oct wireframe: required)', () => {
+  const base: ArrivalDetailsInput = {
+    name: 'Nala',
+    kennel: 'KC2-7',
+    species: 'Cat',
+    countryCode: 'JP',
+    microchip: '982000999999991',
+    sex: 'Female',
+    dateOfBirth: '',
+    releaseDate: '',
+  };
+  it('FE-007: is required and cannot be in the past', () => {
+    expect(validateDetails(base, '2026-10-21').releaseDate).toBe('Enter the release date.');
+    expect(validateDetails({ ...base, releaseDate: '20/10/2026' }, '2026-10-21').releaseDate).toBe('Release date cannot be in the past.');
+    expect(validateDetails({ ...base, releaseDate: '21/10/2026' }, '2026-10-21').releaseDate).toBeUndefined();
   });
 });

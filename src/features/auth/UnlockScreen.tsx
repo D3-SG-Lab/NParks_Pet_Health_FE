@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useSession } from '@/auth';
-import { AppText, Banner, Button, Screen } from '@/components';
+import { AppText, Banner, Button } from '@/components';
 import { theme } from '@/theme';
 
-/** Shown on reopen when "Unlock with biometrics" is on. Prompts automatically, with retry and sign-out. */
+import { AuthLayout } from './AuthLayout';
+
+/** Shown on reopen when "Unlock with Face ID / fingerprint" is on. Prompts automatically, with retry and sign-out. */
 export function UnlockScreen() {
-  const { unlock, signOut } = useSession();
+  const { unlock, signOut, session } = useSession();
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(true); // the prompt opens automatically on mount
 
@@ -32,22 +34,17 @@ export function UnlockScreen() {
   }, [unlock]);
 
   return (
-    <Screen contentStyle={styles.content}>
-      <AppText variant="title" center accessibilityRole="header">
-        AQC Animal Health is locked
-      </AppText>
-      {failed ? (
-        <Banner kind="error" title="Could not unlock" message="Biometric check failed or was cancelled. Try again." />
-      ) : null}
+    <AuthLayout title="AQC Animal Health is locked" subtitle={session?.name ? `Signed in as ${session.name}` : 'Animal Quarantine Centre · NParks / AVS'}>
+      <AppText tone="muted">Use Face ID or your fingerprint to continue.</AppText>
+      {failed ? <Banner kind="error" title="Could not unlock" message="Biometric check failed or was cancelled. Try again." /> : null}
       <View style={styles.actions}>
-        <Button label="Unlock with biometrics" loading={busy} onPress={() => void attempt()} testID="unlock-retry" />
+        <Button label="Unlock with Face ID / fingerprint" icon="finger-print" loading={busy} onPress={() => void attempt()} testID="unlock-retry" />
         <Button label="Sign out" variant="secondary" disabled={busy} onPress={() => void signOut()} testID="unlock-signout" />
       </View>
-    </Screen>
+    </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { gap: theme.spacing.xl, justifyContent: 'center' },
-  actions: { gap: theme.spacing.md },
+  actions: { gap: theme.spacing.s3 },
 });

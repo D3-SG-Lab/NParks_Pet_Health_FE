@@ -1,78 +1,37 @@
-import { Tabs } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Icon, ToastProvider, type IconName } from '@/components';
+import { ToastProvider } from '@/components';
+import { NotificationsProvider } from '@/features/notifications/NotificationsProvider';
 import { resetMockDb } from '@/mock/db';
 import { theme } from '@/theme';
 
-interface TabSpec {
-  name: string;
-  title: string;
-  icon: IconName;
-  iconActive: IconName;
-}
-
-const TABS: readonly TabSpec[] = [
-  { name: 'index', title: 'Operations', icon: 'grid-outline', iconActive: 'grid' },
-  { name: 'daily-inspection', title: 'Daily Inspection', icon: 'clipboard-outline', iconActive: 'clipboard' },
-  { name: 'medication', title: 'Medication', icon: 'medkit-outline', iconActive: 'medkit' },
-  { name: 'cases', title: 'Cases', icon: 'folder-open-outline', iconActive: 'folder-open' },
-];
-
-/** Full-screen flow routes: reachable by navigation, never shown as a tab, and without the tab bar. */
-const FLOW_ROUTES: readonly string[] = ['new-arrival', 'arrival-exam'];
-
-/** Bottom tabs (FE-004). Role-based visibility is added later via useSession().role. */
-export default function AppTabsLayout() {
-  const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const roomy = width >= theme.breakpoints.tablet;
-
+/**
+ * Signed-in area: the bottom tabs at the root, with flow and detail screens pushed on top (without
+ * the tab bar). Back always returns to the screen the user came from, e.g. Case → Animal → back.
+ */
+export default function AppLayout() {
   // The demo data lives in memory for one signed-in session. This layout unmounts on sign-out
   // (route guard), so the next user always starts from the seed data with no leftover draft.
   useEffect(() => resetMockDb, []);
 
   return (
     <ToastProvider>
-      <Tabs
-        // Back from a flow screen returns to where the user came from (e.g. Operations).
-        backBehavior="history"
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: theme.colors.primary,
-          tabBarInactiveTintColor: theme.colors.textMuted,
-          tabBarLabelStyle: { fontSize: theme.fontSizes.caption, fontWeight: theme.fontWeights.medium },
-          // Icon beside the label on tablet/desktop, stacked on phones.
-          tabBarLabelPosition: roomy ? 'beside-icon' : 'below-icon',
-          tabBarStyle: {
-            backgroundColor: theme.colors.surface,
-            borderTopColor: theme.colors.divider,
-            minHeight: theme.control.tabBarMinHeight + insets.bottom,
-            paddingTop: theme.spacing.xs,
-          },
-          tabBarItemStyle: { minHeight: theme.control.minTouch, paddingVertical: theme.spacing.xs },
-        }}
-      >
-        {TABS.map((tab) => (
-          <Tabs.Screen
-            key={tab.name}
-            name={tab.name}
-            options={{
-              title: tab.title,
-              tabBarAccessibilityLabel: tab.title,
-              tabBarButtonTestID: `tab-${tab.name}`,
-              tabBarIcon: ({ focused, color }) => (
-                <Icon name={focused ? tab.iconActive : tab.icon} color={color} />
-              ),
-            }}
-          />
-        ))}
-        {FLOW_ROUTES.map((name) => (
-          <Tabs.Screen key={name} name={name} options={{ href: null, tabBarStyle: { display: 'none' } }} />
-        ))}
-      </Tabs>
+      <NotificationsProvider>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="new-arrival" />
+          <Stack.Screen name="arrival-exam" />
+          <Stack.Screen name="new-observation" options={{ animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="observation/[id]" />
+          <Stack.Screen name="review-queue" />
+          <Stack.Screen name="animal/[id]" />
+          <Stack.Screen name="case/[id]" />
+          <Stack.Screen name="inspect/[animalId]" />
+          <Stack.Screen name="medicate/[animalId]" />
+          <Stack.Screen name="sync" />
+        </Stack>
+      </NotificationsProvider>
     </ToastProvider>
   );
 }

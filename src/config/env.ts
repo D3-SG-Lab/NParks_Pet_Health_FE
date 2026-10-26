@@ -3,6 +3,8 @@
  * Each variable is referenced literally so Expo can inline it at build time.
  */
 
+import type { UserRole } from '@/auth/types';
+
 export type AuthMode = 'oidc' | 'mock';
 
 export interface ProviderEnv {
@@ -14,6 +16,8 @@ export interface ProviderEnv {
 export interface AppEnv {
   apiUrl: string | undefined;
   authMode: AuthMode;
+  /** Development auth bypass role, if set. Read it through isAuthBypassEnabled(). */
+  authBypassRole: UserRole | undefined;
   sessionIdleMinutes: number;
   roleClaim: string;
   officer: ProviderEnv;
@@ -38,9 +42,19 @@ export function parseAuthMode(raw: string | undefined): AuthMode {
   return clean(raw)?.toLowerCase() === 'mock' ? 'mock' : 'oidc';
 }
 
+/** "officer" or "contractor" turns the development auth bypass on as that role; anything else leaves it off. */
+export function parseAuthBypass(raw: string | undefined): UserRole | undefined {
+  const value = clean(raw)?.toLowerCase();
+  return value === 'officer' || value === 'contractor' ? value : undefined;
+}
+
+const authBypassRole = parseAuthBypass(process.env.EXPO_PUBLIC_AUTH_BYPASS);
+
 export const env: AppEnv = {
   apiUrl: clean(process.env.EXPO_PUBLIC_API_URL),
-  authMode: parseAuthMode(process.env.EXPO_PUBLIC_AUTH_MODE),
+  // The bypass signs in with mock tokens, so it implies mock mode.
+  authMode: authBypassRole ? 'mock' : parseAuthMode(process.env.EXPO_PUBLIC_AUTH_MODE),
+  authBypassRole,
   sessionIdleMinutes: parseIdleMinutes(process.env.EXPO_PUBLIC_SESSION_IDLE_MINUTES),
   roleClaim: clean(process.env.EXPO_PUBLIC_ROLE_CLAIM) ?? DEFAULT_ROLE_CLAIM,
   officer: {
@@ -61,4 +75,13 @@ export const env: AppEnv = {
  */
 export function isMockAuthEnabled(mode: AuthMode = env.authMode): boolean {
   return __DEV__ && mode === 'mock';
+}
+
+/**
+ * Development auth bypass (EXPO_PUBLIC_AUTH_BYPASS): every launch starts signed in as the configured
+ * role, with no sign-in, unlock or idle sign-out, and the sign-in / unlock screens stay reachable.
+ * Like mock mode, it can never be on in a production bundle.
+ */
+export function isAuthBypassEnabled(role: UserRole | undefined = env.authBypassRole): boolean {
+  return __DEV__ && role !== undefined;
 }

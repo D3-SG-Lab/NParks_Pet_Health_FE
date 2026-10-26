@@ -19,7 +19,7 @@ const details: ArrivalDetailsInput = {
   microchip: '982000999999991',
   sex: 'Female',
   dateOfBirth: '05/04/2023',
-  releaseDate: '',
+  releaseDate: '19/01/2099',
 };
 
 describe('mock arrival data layer', () => {
@@ -42,7 +42,7 @@ describe('mock arrival data layer', () => {
   });
 
   it('completing the exam adds the animal and updates Operations counts', async () => {
-    const before = await getOperationsSummary();
+    const before = await getOperationsSummary({ id: 'officer-1', name: 'Test Officer', role: 'officer' });
     await saveArrivalDraft({ details });
     const animal = await completeArrival({ details, exam: { ...createEmptyExam(), vetId: 'vet-1', weightKg: '4.2' } });
 
@@ -51,9 +51,9 @@ describe('mock arrival data layer', () => {
     expect(animal.dateOfBirth).toBe('2023-04-05');
     expect(animal.today).toEqual({ arrivalExam: 'done', amInspection: 'due', pmInspection: 'due' });
 
-    const after = await getOperationsSummary();
+    const after = await getOperationsSummary({ id: 'officer-1', name: 'Test Officer', role: 'officer' });
     expect(after.activePets).toBe(before.activePets + 1);
-    expect(after.checksDueAm).toBe(before.checksDueAm + 1);
+    expect(after.checksDue).toBe(before.checksDue + 1);
     expect(after.openCases).toBe(before.openCases);
     expect(await getArrivalDraft()).toBeNull();
     expect(await isMicrochipTaken(details.microchip)).toBe(true);

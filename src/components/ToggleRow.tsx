@@ -1,8 +1,10 @@
-import { Pressable, StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { theme } from '@/theme';
+import { theme, webFocusReset } from '@/theme';
 
 import { AppText } from './AppText';
+import { Pressable } from './Pressable';
+import { Switch } from './Switch';
 
 interface ToggleRowProps {
   label: string;
@@ -13,7 +15,10 @@ interface ToggleRowProps {
   testID?: string;
 }
 
-/** Labelled switch row. The whole row is the single accessible switch (checked state announced). */
+/**
+ * Labelled switch row. The whole row is the single accessible switch (checked state announced, Space / Enter
+ * toggles on web). Keyboard focus shows the halo on the switch track; taps and clicks show no focus ring.
+ */
 export function ToggleRow({ label, description, value, onValueChange, disabled = false, testID }: ToggleRowProps) {
   return (
     <Pressable
@@ -22,27 +27,27 @@ export function ToggleRow({ label, description, value, onValueChange, disabled =
       accessibilityLabel={label}
       accessibilityHint={description}
       accessibilityState={{ checked: value, disabled }}
+      aria-checked={value}
+      aria-disabled={disabled}
       disabled={disabled}
       onPress={() => onValueChange(!value)}
-      style={({ focused }: { pressed: boolean; focused?: boolean }) => [styles.row, focused && styles.focused]}
+      style={[styles.row, webFocusReset]}
     >
-      <View style={styles.text}>
-        <AppText bold>{label}</AppText>
-        {description ? (
-          <AppText variant="caption" tone="muted">
-            {description}
-          </AppText>
-        ) : null}
-      </View>
-      {/* Decorative: the row above carries the semantics. */}
-      <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Switch
-          value={value}
-          disabled={disabled}
-          trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-          thumbColor={theme.colors.surface}
-        />
-      </View>
+      {({ focused }) => (
+        <>
+          <View style={styles.text}>
+            <AppText variant="titleS" tone={disabled ? 'subtle' : 'default'}>
+              {label}
+            </AppText>
+            {description ? (
+              <AppText variant="bodyS" tone={disabled ? 'subtle' : 'muted'}>
+                {description}
+              </AppText>
+            ) : null}
+          </View>
+          <Switch value={value} disabled={disabled} focused={focused} />
+        </>
+      )}
     </Pressable>
   );
 }
@@ -51,14 +56,9 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
+    gap: theme.spacing.s4,
     minHeight: theme.control.minTouch,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radius.sm,
+    paddingVertical: theme.spacing.s1,
   },
-  focused: {
-    borderWidth: theme.control.focusWidth,
-    borderColor: theme.colors.focus,
-  },
-  text: { flex: 1, gap: theme.spacing.xs },
+  text: { flex: 1, gap: 2 },
 });
