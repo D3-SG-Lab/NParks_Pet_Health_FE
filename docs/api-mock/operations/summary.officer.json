@@ -1,0 +1,78 @@
+{
+  "endpoint": "GET /operations/summary",
+  "description": "Operations tab: today's counts, review count and alerts. Scoped to the caller's kennels.",
+  "role": "officer",
+  "response": {
+    "activePets": 8,
+    "checksDue": 3,
+    "session": "AM",
+    "openCases": 3,
+    "observationsNeedingReview": 4,
+    "alerts": [
+      {
+        "id": "alert-1",
+        "animalId": "animal-2",
+        "caseId": "C-2026-0142",
+        "kind": "review",
+        "message": "GI observation requires review",
+        "at": 1792981200000,
+        "animalName": "Yang Yang",
+        "kennel": "KC2-2"
+      },
+      {
+        "id": "overdue-animal-3-AM",
+        "animalId": "animal-3",
+        "caseId": null,
+        "kind": "overdue",
+        "message": "AM inspection overdue",
+        "meta": "Due 08:00",
+        "at": 1792980000000,
+        "animalName": "Mochi",
+        "kennel": "KC2-3"
+      },
+      {
+        "id": "overdue-animal-5-AM",
+        "animalId": "animal-5",
+        "caseId": null,
+        "kind": "overdue",
+        "message": "AM inspection overdue",
+        "meta": "Due 08:00",
+        "at": 1792980000000,
+        "animalName": "Luna",
+        "kennel": "KC2-5"
+      },
+      {
+        "id": "overdue-animal-6-AM",
+        "animalId": "animal-6",
+        "caseId": null,
+        "kind": "overdue",
+        "message": "AM inspection overdue",
+        "meta": "Due 08:00",
+        "at": 1792980000000,
+        "animalName": "Pepper",
+        "kennel": "KC2-6"
+      },
+      {
+        "id": "alert-3",
+        "animalId": "animal-5",
+        "caseId": "C-2026-0121",
+        "kind": "open",
+        "message": "Case reopened · sneezing, nasal discharge",
+        "at": 1792979700000,
+        "animalName": "Luna",
+        "kennel": "KC2-5"
+      },
+      {
+        "id": "alert-2",
+        "animalId": "animal-4",
+        "caseId": "C-2026-0138",
+        "kind": "open",
+        "message": "Follow-up overdue · weigh Milo",
+        "at": 1792974600000,
+        "animalName": "Milo",
+        "kennel": "KC2-4"
+      }
+    ],
+    "updatedAt": 1792981800000
+  }
+}

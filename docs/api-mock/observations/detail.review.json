@@ -1,0 +1,72 @@
+{
+  "endpoint": "GET /observations/{observationId}",
+  "description": "Confirm AI result screen for an observation in \"review\" status.",
+  "request": {
+    "observationId": "obs-401"
+  },
+  "response": {
+    "observation": {
+      "id": "obs-401",
+      "animalId": null,
+      "text": "Dog in the end kennel keeps scratching its left ear and shaking its head.",
+      "media": [
+        {
+          "id": "media-7",
+          "kind": "photo"
+        },
+        {
+          "id": "media-8",
+          "kind": "photo"
+        }
+      ],
+      "submittedAt": 1792972500000,
+      "submittedBy": "Aisha Rahman",
+      "submittedByRole": "officer",
+      "source": "observation",
+      "ai": {
+        "match": null,
+        "candidates": [
+          {
+            "animalId": "animal-4",
+            "confidence": 0.48
+          },
+          {
+            "animalId": "animal-6",
+            "confidence": 0.31
+          }
+        ],
+        "extraction": {
+          "signs": [
+            {
+              "code": "ear-scratching",
+              "label": "Ear scratching",
+              "system": "Ears"
+            },
+            {
+              "code": "head-shaking",
+              "label": "Head shaking",
+              "system": "Ears"
+            }
+          ],
+          "food": null,
+          "stool": null,
+          "onsetDate": "2026-10-26",
+          "severity": "mild"
+        },
+        "suggestion": {
+          "action": "new-case",
+          "caseId": null,
+          "rationale": "No kennel code or name recognised."
+        },
+        "processedAt": 1792972560000,
+        "durationSec": 9
+      },
+      "status": "review",
+      "routing": null,
+      "readyAt": null,
+      "aiUnavailable": false
+    },
+    "animal": null,
+    "cases": []
+  }
+}

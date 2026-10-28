@@ -1,0 +1,154 @@
+{
+  "endpoint": "GET /inspections/board?session={AM|PM}&date={YYYY-MM-DD}",
+  "description": "Daily Inspection tab: animals in scope with today's record for the session (null = still due).",
+  "role": "contractor",
+  "request": {
+    "session": "PM",
+    "date": "2026-10-26"
+  },
+  "response": {
+    "date": "2026-10-26",
+    "session": "PM",
+    "items": [
+      {
+        "animal": {
+          "id": "animal-1",
+          "name": "Biscuit",
+          "kennel": "KC2-1",
+          "species": "Dog",
+          "sex": "Male",
+          "countryCode": "AU",
+          "microchip": "982000123450001",
+          "dateOfBirth": "2022-03-14",
+          "arrivalDate": "2026-08-18",
+          "releaseDate": "2026-11-18",
+          "status": "active-monitoring",
+          "today": {
+            "arrivalExam": "done",
+            "amInspection": "done",
+            "pmInspection": "due"
+          }
+        },
+        "record": null,
+        "lastCheckAt": 1792974180000,
+        "openCaseId": null
+      },
+      {
+        "animal": {
+          "id": "animal-2",
+          "name": "Yang Yang",
+          "kennel": "KC2-2",
+          "species": "Dog",
+          "sex": "Female",
+          "countryCode": "CN",
+          "microchip": "982000123450002",
+          "dateOfBirth": "2021-11-02",
+          "arrivalDate": "2026-08-19",
+          "releaseDate": "2026-11-19",
+          "status": "active-monitoring",
+          "today": {
+            "arrivalExam": "done",
+            "amInspection": "done",
+            "pmInspection": "due"
+          }
+        },
+        "record": null,
+        "lastCheckAt": 1792974960000,
+        "openCaseId": "C-2026-0142"
+      },
+      {
+        "animal": {
+          "id": "animal-3",
+          "name": "Mochi",
+          "kennel": "KC2-3",
+          "species": "Cat",
+          "sex": "Female",
+          "countryCode": "JP",
+          "microchip": "982000123450003",
+          "dateOfBirth": "2023-01-27",
+          "arrivalDate": "2026-08-20",
+          "releaseDate": "2026-11-20",
+          "status": "active-monitoring",
+          "today": {
+            "arrivalExam": "done",
+            "amInspection": "due",
+            "pmInspection": "due"
+          }
+        },
+        "record": null,
+        "lastCheckAt": 1792916400000,
+        "openCaseId": null
+      },
+      {
+        "animal": {
+          "id": "animal-4",
+          "name": "Milo",
+          "kennel": "KC2-4",
+          "species": "Dog",
+          "sex": "Male",
+          "countryCode": "NZ",
+          "microchip": "982000123450004",
+          "dateOfBirth": "2020-07-09",
+          "arrivalDate": "2026-08-12",
+          "releaseDate": "2026-11-12",
+          "status": "active-monitoring",
+          "today": {
+            "arrivalExam": "done",
+            "amInspection": "done",
+            "pmInspection": "due"
+          }
+        },
+        "record": null,
+        "lastCheckAt": 1792974060000,
+        "openCaseId": "C-2026-0138"
+      },
+      {
+        "animal": {
+          "id": "animal-5",
+          "name": "Luna",
+          "kennel": "KC2-5",
+          "species": "Cat",
+          "sex": "Female",
+          "countryCode": "GB",
+          "microchip": "982000123450005",
+          "dateOfBirth": "2022-09-30",
+          "arrivalDate": "2026-08-10",
+          "releaseDate": "2026-11-10",
+          "status": "active-monitoring",
+          "today": {
+            "arrivalExam": "done",
+            "amInspection": "due",
+            "pmInspection": "due"
+          }
+        },
+        "record": null,
+        "lastCheckAt": 1792916400000,
+        "openCaseId": "C-2026-0121"
+      },
+      {
+        "animal": {
+          "id": "animal-6",
+          "name": "Pepper",
+          "kennel": "KC2-6",
+          "species": "Dog",
+          "sex": "Male",
+          "countryCode": "US",
+          "microchip": "982000123450006",
+          "dateOfBirth": null,
+          "arrivalDate": "2026-08-22",
+          "releaseDate": null,
+          "status": "active-monitoring",
+          "today": {
+            "arrivalExam": "done",
+            "amInspection": "due",
+            "pmInspection": "due"
+          }
+        },
+        "record": null,
+        "lastCheckAt": 1792916400000,
+        "openCaseId": null
+      }
+    ],
+    "doneCount": 0
+  }
+}

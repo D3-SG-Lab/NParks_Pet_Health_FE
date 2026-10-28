@@ -1,0 +1,343 @@
+{
+  "endpoint": "GET /observations/review-queue",
+  "description": "Review queue (officers only): unmatched, low-confidence and AI-unavailable observations.",
+  "role": "officer",
+  "response": [
+    {
+      "observation": {
+        "id": "obs-401",
+        "animalId": null,
+        "text": "Dog in the end kennel keeps scratching its left ear and shaking its head.",
+        "media": [
+          {
+            "id": "media-7",
+            "kind": "photo"
+          },
+          {
+            "id": "media-8",
+            "kind": "photo"
+          }
+        ],
+        "submittedAt": 1792972500000,
+        "submittedBy": "Aisha Rahman",
+        "submittedByRole": "officer",
+        "source": "observation",
+        "ai": {
+          "match": null,
+          "candidates": [
+            {
+              "animalId": "animal-4",
+              "confidence": 0.48
+            },
+            {
+              "animalId": "animal-6",
+              "confidence": 0.31
+            }
+          ],
+          "extraction": {
+            "signs": [
+              {
+                "code": "ear-scratching",
+                "label": "Ear scratching",
+                "system": "Ears"
+              },
+              {
+                "code": "head-shaking",
+                "label": "Head shaking",
+                "system": "Ears"
+              }
+            ],
+            "food": null,
+            "stool": null,
+            "onsetDate": "2026-10-26",
+            "severity": "mild"
+          },
+          "suggestion": {
+            "action": "new-case",
+            "caseId": null,
+            "rationale": "No kennel code or name recognised."
+          },
+          "processedAt": 1792972560000,
+          "durationSec": 9
+        },
+        "status": "review",
+        "routing": null,
+        "readyAt": null,
+        "aiUnavailable": false
+      },
+      "reason": "no-match",
+      "guess": null,
+      "guessCase": null,
+      "candidates": [
+        {
+          "animal": {
+            "id": "animal-4",
+            "name": "Milo",
+            "kennel": "KC2-4",
+            "species": "Dog",
+            "sex": "Male",
+            "countryCode": "NZ",
+            "microchip": "982000123450004",
+            "dateOfBirth": "2020-07-09",
+            "arrivalDate": "2026-08-12",
+            "releaseDate": "2026-11-12",
+            "status": "active-monitoring",
+            "today": {
+              "arrivalExam": "done",
+              "amInspection": "done",
+              "pmInspection": "due"
+            }
+          },
+          "confidence": 0.48
+        },
+        {
+          "animal": {
+            "id": "animal-6",
+            "name": "Pepper",
+            "kennel": "KC2-6",
+            "species": "Dog",
+            "sex": "Male",
+            "countryCode": "US",
+            "microchip": "982000123450006",
+            "dateOfBirth": null,
+            "arrivalDate": "2026-08-22",
+            "releaseDate": null,
+            "status": "active-monitoring",
+            "today": {
+              "arrivalExam": "done",
+              "amInspection": "due",
+              "pmInspection": "due"
+            }
+          },
+          "confidence": 0.31
+        }
+      ]
+    },
+    {
+      "observation": {
+        "id": "obs-403",
+        "animalId": null,
+        "text": "Pepper? Coughing a few times this morning during cleaning.",
+        "media": [
+          {
+            "id": "media-9",
+            "kind": "photo"
+          },
+          {
+            "id": "media-10",
+            "kind": "photo"
+          }
+        ],
+        "submittedAt": 1792980300000,
+        "submittedBy": "Siti Hassan",
+        "submittedByRole": "contractor",
+        "source": "observation",
+        "ai": {
+          "match": {
+            "animalId": "animal-6",
+            "confidence": 0.61,
+            "selectedByUser": false
+          },
+          "candidates": [],
+          "extraction": {
+            "signs": [
+              {
+                "code": "coughing",
+                "label": "Coughing",
+                "system": "Respiratory"
+              }
+            ],
+            "food": null,
+            "stool": null,
+            "onsetDate": "2026-10-26",
+            "severity": "mild"
+          },
+          "suggestion": {
+            "action": "new-case",
+            "caseId": null,
+            "rationale": "Name matched with low certainty."
+          },
+          "processedAt": 1792980360000,
+          "durationSec": 9
+        },
+        "status": "review",
+        "routing": null,
+        "readyAt": null,
+        "aiUnavailable": false
+      },
+      "reason": "low-confidence",
+      "guess": {
+        "id": "animal-6",
+        "name": "Pepper",
+        "kennel": "KC2-6",
+        "species": "Dog",
+        "sex": "Male",
+        "countryCode": "US",
+        "microchip": "982000123450006",
+        "dateOfBirth": null,
+        "arrivalDate": "2026-08-22",
+        "releaseDate": null,
+        "status": "active-monitoring",
+        "today": {
+          "arrivalExam": "done",
+          "amInspection": "due",
+          "pmInspection": "due"
+        }
+      },
+      "guessCase": null,
+      "candidates": []
+    },
+    {
+      "observation": {
+        "id": "obs-402",
+        "animalId": null,
+        "text": "The brown dog didn't finish breakfast again.",
+        "media": [],
+        "submittedAt": 1792977600000,
+        "submittedBy": "Aisha Rahman",
+        "submittedByRole": "officer",
+        "source": "observation",
+        "ai": {
+          "match": {
+            "animalId": "animal-4",
+            "confidence": 0.58,
+            "selectedByUser": false
+          },
+          "candidates": [],
+          "extraction": {
+            "signs": [
+              {
+                "code": "reduced-appetite",
+                "label": "Reduced appetite",
+                "system": "GI"
+              }
+            ],
+            "food": "Half",
+            "stool": null,
+            "onsetDate": "2026-10-26",
+            "severity": "mild"
+          },
+          "suggestion": {
+            "action": "update-case",
+            "caseId": "C-2026-0138",
+            "rationale": "Possible match on species and recent appetite case."
+          },
+          "processedAt": 1792977660000,
+          "durationSec": 9
+        },
+        "status": "review",
+        "routing": null,
+        "readyAt": null,
+        "aiUnavailable": false
+      },
+      "reason": "low-confidence",
+      "guess": {
+        "id": "animal-4",
+        "name": "Milo",
+        "kennel": "KC2-4",
+        "species": "Dog",
+        "sex": "Male",
+        "countryCode": "NZ",
+        "microchip": "982000123450004",
+        "dateOfBirth": "2020-07-09",
+        "arrivalDate": "2026-08-12",
+        "releaseDate": "2026-11-12",
+        "status": "active-monitoring",
+        "today": {
+          "arrivalExam": "done",
+          "amInspection": "done",
+          "pmInspection": "due"
+        }
+      },
+      "guessCase": {
+        "id": "C-2026-0138",
+        "animalId": "animal-4",
+        "finding": "Reduced appetite, leaving food",
+        "system": "GI",
+        "status": "open",
+        "openedAt": 1792545600000,
+        "updatedAt": 1792916400000,
+        "assigneeId": "staff-3",
+        "followUps": [
+          {
+            "id": "fu-4",
+            "text": "Weigh Milo",
+            "dueDate": "2026-10-25",
+            "done": false
+          },
+          {
+            "id": "fu-5",
+            "text": "Offer a bland diet",
+            "dueDate": "2026-10-27",
+            "done": false
+          }
+        ],
+        "events": [
+          {
+            "id": "ev-7",
+            "at": 1792545600000,
+            "kind": "opened",
+            "title": "Case opened from AI routing",
+            "by": "Aisha Rahman",
+            "observationId": "obs-201",
+            "detail": "Confirmed by Aisha Rahman"
+          },
+          {
+            "id": "ev-8",
+            "at": 1792545900000,
+            "kind": "assigned",
+            "title": "Assigned to Aisha Rahman",
+            "by": "Marcus Lim"
+          },
+          {
+            "id": "ev-9",
+            "at": 1792714800000,
+            "kind": "inspection",
+            "title": "AM inspection · Food: Half",
+            "by": "Siti Hassan",
+            "inspectionId": "insp-seed-45"
+          },
+          {
+            "id": "ev-10",
+            "at": 1792916400000,
+            "kind": "inspection",
+            "title": "PM inspection · Food: Half",
+            "by": "Aisha Rahman",
+            "inspectionId": "insp-seed-50"
+          }
+        ],
+        "evidence": [],
+        "closedAt": null,
+        "closeReason": null,
+        "reopenedAt": null
+      },
+      "candidates": []
+    },
+    {
+      "observation": {
+        "id": "obs-404",
+        "animalId": null,
+        "text": "KC1-2 vomited once after PM feed, photo attached.",
+        "media": [
+          {
+            "id": "media-11",
+            "kind": "photo"
+          }
+        ],
+        "submittedAt": 1792920600000,
+        "submittedBy": "Siti Hassan",
+        "submittedByRole": "contractor",
+        "source": "observation",
+        "ai": null,
+        "aiUnavailable": true,
+        "status": "review",
+        "routing": null,
+        "readyAt": null
+      },
+      "reason": "ai-unavailable",
+      "guess": null,
+      "guessCase": null,
+      "candidates": []
+    }
+  ]
+}

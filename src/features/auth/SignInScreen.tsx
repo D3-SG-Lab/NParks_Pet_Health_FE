@@ -1,11 +1,12 @@
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 
 import { useSession, type AuthErrorKind, type AuthProviderId } from '@/auth';
 import { isProviderAvailable } from '@/auth/providers';
 import { AppText, Banner, BottomSheet, Button, Icon, SectionLabel, type IconName, Pressable } from '@/components';
-import { isMockAuthEnabled } from '@/config/env';
+import { isAuthBypassEnabled, isMockAuthEnabled } from '@/config/env';
 import { focusRing, shadow, theme } from '@/theme';
 
 import { AuthLayout } from './AuthLayout';
@@ -43,7 +44,9 @@ export function SignInScreen() {
     inFlight.current = false;
     setPending(null);
     if (error) setFailure({ kind: error.kind, provider });
-    // On success the navigator moves to the tabs automatically (route guard).
+    // On success the navigator moves to the tabs automatically (route guard), except under the development
+    // auth bypass, which keeps this screen reachable, so go there explicitly.
+    else if (isAuthBypassEnabled()) router.replace('/');
   };
 
   const handleBiometric = async (next: boolean) => {

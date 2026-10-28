@@ -1,0 +1,13 @@
+{
+  "endpoint": "GET /animals/{animalId}/profile",
+  "description": "A contractor opening an animal outside their kennels. Suggested status: 403.",
+  "role": "contractor",
+  "request": {
+    "animalId": "animal-7"
+  },
+  "response": {
+    "error": "ScopeError",
+    "kind": null,
+    "message": "This animal is outside your assigned kennels."
+  }
+}

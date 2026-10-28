@@ -1,0 +1,67 @@
+{
+  "endpoint": "POST /observations",
+  "description": "New Health Observation. Saved immediately with status \"processing\"; the AI result follows (poll GET /observations/{id}).",
+  "role": "officer",
+  "request": {
+    "animalId": "animal-2",
+    "text": "Yang Yang vomited twice this morning and left half the food.",
+    "media": [
+      {
+        "id": "media-1",
+        "kind": "photo"
+      }
+    ]
+  },
+  "response": {
+    "id": "obs-1000",
+    "animalId": "animal-2",
+    "text": "Yang Yang vomited twice this morning and left half the food.",
+    "media": [
+      {
+        "id": "media-1",
+        "kind": "photo"
+      }
+    ],
+    "submittedAt": 1792981800000,
+    "submittedBy": "Aisha Rahman",
+    "submittedByRole": "officer",
+    "source": "observation",
+    "ai": {
+      "match": {
+        "animalId": "animal-2",
+        "confidence": 1,
+        "selectedByUser": true
+      },
+      "candidates": [],
+      "extraction": {
+        "signs": [
+          {
+            "code": "vomiting",
+            "label": "Vomiting",
+            "system": "GI"
+          },
+          {
+            "code": "reduced-appetite",
+            "label": "Reduced appetite",
+            "system": "GI"
+          }
+        ],
+        "food": "Half",
+        "stool": null,
+        "onsetDate": "2026-10-26",
+        "severity": "mild"
+      },
+      "suggestion": {
+        "action": "update-case",
+        "caseId": "C-2026-0142",
+        "rationale": "Signs match open GI case opened 20/10."
+      },
+      "processedAt": 1792981800000,
+      "durationSec": 1
+    },
+    "status": "awaiting-confirmation",
+    "routing": null,
+    "readyAt": 1792981800000,
+    "aiUnavailable": false
+  }
+}

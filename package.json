@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "test": "jest",
-    "api:generate": "openapi-ts"
+    "api:generate": "openapi-ts",
+    "mock:export": "TZ=Asia/Singapore jest --testMatch '<rootDir>/scripts/export-mock-api.ts' --forceExit"
   },
   "dependencies": {
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",

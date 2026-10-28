@@ -1,0 +1,12 @@
+{
+  "endpoint": "GET /records/{kind}/{id}",
+  "description": "Record detail sheet for a case timeline entry.",
+  "request": {
+    "kind": "case",
+    "id": "C-2026-0107"
+  },
+  "response": {
+    "kind": "case",
+    "caseId": "C-2026-0107"
+  }
+}

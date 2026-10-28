@@ -1,0 +1,80 @@
+{
+  "endpoint": "GET /cases/{caseId}",
+  "description": "Case detail for a case in \"closed\" status, with the AI case summary.",
+  "role": "officer",
+  "request": {
+    "caseId": "C-2026-0107"
+  },
+  "response": {
+    "healthCase": {
+      "id": "C-2026-0107",
+      "animalId": "animal-1",
+      "finding": "Skin irritation — resolved",
+      "system": "Skin",
+      "status": "closed",
+      "openedAt": 1791248400000,
+      "updatedAt": 1792303200000,
+      "assigneeId": "staff-1",
+      "followUps": [
+        {
+          "id": "fu-7",
+          "text": "Medicated shampoo for 10 days",
+          "dueDate": "2026-10-16",
+          "done": true
+        }
+      ],
+      "events": [
+        {
+          "id": "ev-15",
+          "at": 1791248400000,
+          "kind": "opened",
+          "title": "Case opened from AI routing",
+          "by": "Aisha Rahman"
+        },
+        {
+          "id": "ev-16",
+          "at": 1791250200000,
+          "kind": "assigned",
+          "title": "Assigned to Dr. Priya Nair",
+          "by": "Marcus Lim"
+        },
+        {
+          "id": "ev-17",
+          "at": 1792303200000,
+          "kind": "closed",
+          "title": "Case closed · Resolved after treatment",
+          "by": "Dr. Priya Nair"
+        }
+      ],
+      "evidence": [],
+      "closedAt": 1792303200000,
+      "closeReason": "Resolved after treatment",
+      "reopenedAt": null
+    },
+    "animal": {
+      "id": "animal-1",
+      "name": "Biscuit",
+      "kennel": "KC2-1",
+      "species": "Dog",
+      "sex": "Male",
+      "countryCode": "AU",
+      "microchip": "982000123450001",
+      "dateOfBirth": "2022-03-14",
+      "arrivalDate": "2026-08-18",
+      "releaseDate": "2026-11-18",
+      "status": "active-monitoring",
+      "today": {
+        "arrivalExam": "done",
+        "amInspection": "done",
+        "pmInspection": "due"
+      }
+    },
+    "assignee": {
+      "id": "staff-1",
+      "name": "Dr. Priya Nair",
+      "role": "vet"
+    },
+    "summary": "Skin irritation — resolved since 06/10, 0 linked records in 7 days. Closed 18/10: Resolved after treatment.",
+    "pendingObservationId": null
+  }
+}

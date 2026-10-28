@@ -1,0 +1,68 @@
+{
+  "endpoint": "POST /arrivals",
+  "description": "Microchip already registered to an active stay. Suggested status: 409.",
+  "role": "officer",
+  "request": {
+    "details": {
+      "name": "Bao",
+      "kennel": "KC2-7",
+      "species": "Cat",
+      "countryCode": "JP",
+      "microchip": "392140000123456",
+      "sex": "Female",
+      "dateOfBirth": "12/03/2023",
+      "releaseDate": "25/11/2026"
+    },
+    "exam": {
+      "vetId": "vet-1",
+      "weightKg": "4.2",
+      "mentation": "Alert",
+      "findings": {
+        "skin": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        },
+        "eyes": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        },
+        "nose": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        },
+        "ears": {
+          "abnormal": true,
+          "note": "Mild wax build-up, left ear.",
+          "photos": [
+            {
+              "id": "photo-1"
+            }
+          ]
+        },
+        "mouth": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        },
+        "hydration": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        },
+        "respiratory": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        }
+      }
+    }
+  },
+  "response": {
+    "error": "ArrivalError",
+    "kind": "microchip_taken",
+    "message": "This microchip number is already registered to an active stay."
+  }
+}

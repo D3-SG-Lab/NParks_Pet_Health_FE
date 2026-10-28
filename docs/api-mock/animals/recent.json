@@ -1,0 +1,8 @@
+{
+  "endpoint": "GET /me/recent-animals",
+  "description": "Animal IDs most recently picked by this user, newest first (max 3).",
+  "response": [
+    "animal-2",
+    "animal-4"
+  ]
+}

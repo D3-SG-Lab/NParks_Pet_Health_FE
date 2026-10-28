@@ -1,0 +1,15 @@
+{
+  "endpoint": "POST /medication/administrations",
+  "description": "Second record for the same dose slot. Suggested status: 409.",
+  "role": "officer",
+  "request": {
+    "scheduleId": "med-2",
+    "slot": "2026-10-26T09:00",
+    "remarks": "Took it with food."
+  },
+  "response": {
+    "error": "MedicationError",
+    "kind": "already_recorded",
+    "message": "This Ear drops dose was already recorded."
+  }
+}

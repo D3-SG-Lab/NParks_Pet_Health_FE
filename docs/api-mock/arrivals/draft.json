@@ -1,0 +1,31 @@
+{
+  "endpoint": "PUT /arrivals/draft",
+  "description": "Autosaved New Arrival draft (one per user). GET /arrivals/draft returns the same shape or null.",
+  "role": "officer",
+  "request": {
+    "details": {
+      "name": "Bao",
+      "kennel": "KC2-7",
+      "species": "Cat",
+      "countryCode": "JP",
+      "microchip": "392140000123456",
+      "sex": "Female",
+      "dateOfBirth": "12/03/2023",
+      "releaseDate": "25/11/2026"
+    }
+  },
+  "response": {
+    "details": {
+      "name": "Bao",
+      "kennel": "KC2-7",
+      "species": "Cat",
+      "countryCode": "JP",
+      "microchip": "392140000123456",
+      "sex": "Female",
+      "dateOfBirth": "12/03/2023",
+      "releaseDate": "25/11/2026"
+    },
+    "exam": null,
+    "updatedAt": 1792981800000
+  }
+}

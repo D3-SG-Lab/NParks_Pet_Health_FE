@@ -1,0 +1,27 @@
+{
+  "endpoint": "GET /staff/assignable",
+  "description": "Case assignee picker (officer-side staff only).",
+  "role": "officer",
+  "response": [
+    {
+      "id": "staff-1",
+      "name": "Dr. Priya Nair",
+      "role": "vet"
+    },
+    {
+      "id": "staff-2",
+      "name": "Dr. Daniel Tan",
+      "role": "vet"
+    },
+    {
+      "id": "staff-3",
+      "name": "Aisha Rahman",
+      "role": "officer"
+    },
+    {
+      "id": "staff-4",
+      "name": "Marcus Lim",
+      "role": "supervisor"
+    }
+  ]
+}

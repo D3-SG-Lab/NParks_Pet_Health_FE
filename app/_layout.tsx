@@ -24,17 +24,19 @@ function RootNavigator() {
 
   // Route guards: signed-out users can only reach sign-in; signed-in users only reach the tabs.
   // The development auth bypass keeps sign-in and unlock reachable too, so every screen can be previewed.
+  // The signed-in group is listed first so it is the initial route whenever it is reachable (on native the
+  // first available screen is the start screen, and the bypass leaves sign-in available as well).
   const bypass = isAuthBypassEnabled();
   return (
     <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={status === 'signedIn'}>
+        <Stack.Screen name="(app)" />
+      </Stack.Protected>
       <Stack.Protected guard={status === 'signedOut' || bypass}>
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
       <Stack.Protected guard={status === 'locked' || bypass}>
         <Stack.Screen name="unlock" />
-      </Stack.Protected>
-      <Stack.Protected guard={status === 'signedIn'}>
-        <Stack.Screen name="(app)" />
       </Stack.Protected>
       {/* OIDC redirect target; always reachable so the auth session can complete. */}
       <Stack.Screen name="auth/callback" />

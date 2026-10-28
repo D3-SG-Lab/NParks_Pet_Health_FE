@@ -1,0 +1,14 @@
+{
+  "endpoint": "PUSH payload",
+  "description": "Push notification payload. Must never carry sensitive health data beyond what is shown.",
+  "response": {
+    "id": "push-C-2026-0121",
+    "title": "Case reopened · KC2-5 Luna",
+    "body": "Sneezing, clear nasal discharge. Tap to open the case.",
+    "at": 1792981800000,
+    "target": {
+      "kind": "case",
+      "caseId": "C-2026-0121"
+    }
+  }
+}

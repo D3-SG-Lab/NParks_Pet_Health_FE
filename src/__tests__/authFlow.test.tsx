@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useSession } from '@/auth';
+import { setBypassRole } from '@/auth/bypassRole';
 import { AppText, Button } from '@/components';
 import { env } from '@/config/env';
 import { SignInScreen } from '@/features/auth/SignInScreen';
@@ -16,6 +17,10 @@ jest.mock('@/auth/tokenStorage', () => ({
   saveLastActive: jest.fn(async () => undefined),
   loadBiometricPreference: jest.fn(async () => false),
   saveBiometricPreference: jest.fn(async () => undefined),
+}));
+jest.mock('expo-router', () => ({
+  ...jest.requireActual('expo-router'),
+  router: { replace: jest.fn() },
 }));
 jest.mock('@/auth/biometrics', () => ({
   isBiometricSupported: jest.fn(async () => false),
@@ -30,6 +35,8 @@ const storage = require('@/auth/tokenStorage') as {
 };
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const biometrics = require('@/auth/biometrics') as { isBiometricSupported: jest.Mock };
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { router } = require('expo-router') as { router: { replace: jest.Mock } };
 
 function Probe() {
   const { status, role } = useSession();
@@ -109,6 +116,7 @@ describe('development auth bypass', () => {
   beforeEach(() => jest.clearAllMocks());
   afterEach(() => {
     env.authBypassRole = undefined;
+    setBypassRole(null);
   });
 
   it('starts signed in as the configured role without a sign-in', async () => {
@@ -121,6 +129,19 @@ describe('development auth bypass', () => {
     env.authBypassRole = 'contractor';
     storage.loadBiometricPreference.mockResolvedValueOnce(true);
     biometrics.isBiometricSupported.mockResolvedValueOnce(true);
+    wrap(null);
+    await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedIn:contractor'));
+  });
+
+  it('opens the tabs after a sign-in and keeps the picked role when the app restarts', async () => {
+    env.authBypassRole = 'officer';
+    const first = wrap(<SignInScreen />);
+    await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedIn:officer'));
+    fireEvent.press(screen.getByTestId('signin-contractor'));
+    await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedIn:contractor'));
+    expect(router.replace).toHaveBeenCalledWith('/');
+
+    first.unmount();
     wrap(null);
     await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signedIn:contractor'));
   });

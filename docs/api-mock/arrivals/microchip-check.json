@@ -1,0 +1,10 @@
+{
+  "endpoint": "GET /animals/microchip/{microchip}/taken",
+  "description": "Microchip uniqueness across active stays.",
+  "request": {
+    "microchip": "982000123450002"
+  },
+  "response": {
+    "taken": true
+  }
+}

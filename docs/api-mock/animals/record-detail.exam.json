@@ -1,0 +1,57 @@
+{
+  "endpoint": "GET /records/{kind}/{id}",
+  "description": "Record detail sheet for a exam timeline entry.",
+  "request": {
+    "kind": "exam",
+    "id": "exam-seed-1"
+  },
+  "response": {
+    "kind": "exam",
+    "record": {
+      "id": "exam-seed-1",
+      "animalId": "animal-1",
+      "vetId": "vet-1",
+      "weightKg": "18.5",
+      "mentation": "Responsive",
+      "findings": {
+        "skin": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        },
+        "eyes": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        },
+        "nose": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        },
+        "ears": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        },
+        "mouth": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        },
+        "hydration": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        },
+        "respiratory": {
+          "abnormal": false,
+          "note": "",
+          "photos": []
+        }
+      },
+      "examinedAt": 1787020200000
+    },
+    "vet": "Dr. Priya Nair"
+  }
+}

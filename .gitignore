@@ -28,3 +28,7 @@ coverage/
 *.p12
 *.key
 *.mobileprovision
+
+# editor caches (React Native Tools); shared editor settings may be committed
+.vscode/.react/
+.idea/
