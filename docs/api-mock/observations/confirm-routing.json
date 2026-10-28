@@ -1,0 +1,27 @@
+{
+  "endpoint": "POST /observations/{observationId}/routing",
+  "description": "Confirm & Route (and review-queue triage). Records the officer's decision and creates, updates or reopens a case.",
+  "role": "officer",
+  "request": {
+    "observationId": "obs-1000",
+    "animalId": "animal-2",
+    "signs": [
+      {
+        "code": "vomiting",
+        "label": "Vomiting",
+        "system": "GI"
+      },
+      {
+        "code": "reduced-appetite",
+        "label": "Reduced appetite",
+        "system": "GI"
+      }
+    ],
+    "action": "update-case",
+    "caseId": "C-2026-0142"
+  },
+  "response": {
+    "caseId": "C-2026-0142",
+    "animalId": "animal-2"
+  }
+}

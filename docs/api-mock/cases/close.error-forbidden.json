@@ -1,0 +1,15 @@
+{
+  "endpoint": "POST /cases/{caseId}/close",
+  "description": "Only officers may close a case. Suggested status: 403.",
+  "role": "contractor",
+  "request": {
+    "caseId": "C-2026-0142",
+    "reason": "Resolved",
+    "note": ""
+  },
+  "response": {
+    "error": "CaseError",
+    "kind": "forbidden",
+    "message": "Only officers can close cases."
+  }
+}

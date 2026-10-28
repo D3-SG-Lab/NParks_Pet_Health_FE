@@ -1,0 +1,81 @@
+{
+  "endpoint": "GET /clinical-signs",
+  "description": "AQC symptom taxonomy used by the AI extraction and the sign editor on Confirm AI result.",
+  "response": [
+    {
+      "code": "soft-stool",
+      "label": "Soft stool",
+      "system": "GI"
+    },
+    {
+      "code": "loose-stool",
+      "label": "Loose stool",
+      "system": "GI"
+    },
+    {
+      "code": "vomiting",
+      "label": "Vomiting",
+      "system": "GI"
+    },
+    {
+      "code": "reduced-appetite",
+      "label": "Reduced appetite",
+      "system": "GI"
+    },
+    {
+      "code": "sneezing",
+      "label": "Sneezing",
+      "system": "Respiratory"
+    },
+    {
+      "code": "nasal-discharge",
+      "label": "Nasal discharge",
+      "system": "Respiratory"
+    },
+    {
+      "code": "coughing",
+      "label": "Coughing",
+      "system": "Respiratory"
+    },
+    {
+      "code": "scratching",
+      "label": "Scratching",
+      "system": "Skin"
+    },
+    {
+      "code": "hair-loss",
+      "label": "Hair loss",
+      "system": "Skin"
+    },
+    {
+      "code": "eye-discharge",
+      "label": "Eye discharge",
+      "system": "Eyes"
+    },
+    {
+      "code": "red-eye",
+      "label": "Red eye",
+      "system": "Eyes"
+    },
+    {
+      "code": "ear-scratching",
+      "label": "Ear scratching",
+      "system": "Ears"
+    },
+    {
+      "code": "head-shaking",
+      "label": "Head shaking",
+      "system": "Ears"
+    },
+    {
+      "code": "lethargy",
+      "label": "Lethargy",
+      "system": "General"
+    },
+    {
+      "code": "lameness",
+      "label": "Lameness",
+      "system": "Musculoskeletal"
+    }
+  ]
+}

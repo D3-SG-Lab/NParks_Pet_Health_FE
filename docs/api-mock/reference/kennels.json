@@ -1,0 +1,56 @@
+{
+  "endpoint": "GET /kennels",
+  "description": "Kennel picker on New Arrival, with the current occupant.",
+  "response": [
+    {
+      "code": "KC1-1",
+      "block": "KC1",
+      "occupant": "Simba"
+    },
+    {
+      "code": "KC1-2",
+      "block": "KC1",
+      "occupant": "Kiwi"
+    },
+    {
+      "code": "KC1-3",
+      "block": "KC1",
+      "occupant": null
+    },
+    {
+      "code": "KC2-1",
+      "block": "KC2",
+      "occupant": "Biscuit"
+    },
+    {
+      "code": "KC2-2",
+      "block": "KC2",
+      "occupant": "Yang Yang"
+    },
+    {
+      "code": "KC2-3",
+      "block": "KC2",
+      "occupant": "Mochi"
+    },
+    {
+      "code": "KC2-4",
+      "block": "KC2",
+      "occupant": "Milo"
+    },
+    {
+      "code": "KC2-5",
+      "block": "KC2",
+      "occupant": "Luna"
+    },
+    {
+      "code": "KC2-6",
+      "block": "KC2",
+      "occupant": "Pepper"
+    },
+    {
+      "code": "KC2-7",
+      "block": "KC2",
+      "occupant": null
+    }
+  ]
+}

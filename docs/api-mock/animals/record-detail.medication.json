@@ -1,0 +1,32 @@
+{
+  "endpoint": "GET /records/{kind}/{id}",
+  "description": "Record detail sheet for a medication timeline entry.",
+  "request": {
+    "kind": "medication",
+    "id": "adm-seed-11"
+  },
+  "response": {
+    "kind": "medication",
+    "record": {
+      "id": "adm-seed-11",
+      "scheduleId": "med-1",
+      "animalId": "animal-2",
+      "slot": "2026-10-26T08:00",
+      "administeredAt": 1792973400000,
+      "by": "Aisha Rahman",
+      "remarks": "Mixed with food"
+    },
+    "schedule": {
+      "id": "med-1",
+      "animalId": "animal-2",
+      "item": "Probiotic",
+      "dose": "5 mL oral",
+      "times": [
+        "08:00",
+        "20:00"
+      ],
+      "startDate": "2026-10-21",
+      "endDate": "2026-10-31"
+    }
+  }
+}

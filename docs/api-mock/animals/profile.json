@@ -1,0 +1,875 @@
+{
+  "endpoint": "GET /animals/{animalId}/profile",
+  "description": "Animal Profile: animal, 30-day timeline (newest first), AI summary with citations, cases and today's checks.",
+  "role": "officer",
+  "request": {
+    "animalId": "animal-2"
+  },
+  "response": {
+    "animal": {
+      "id": "animal-2",
+      "name": "Yang Yang",
+      "kennel": "KC2-2",
+      "species": "Dog",
+      "sex": "Female",
+      "countryCode": "CN",
+      "microchip": "982000123450002",
+      "dateOfBirth": "2021-11-02",
+      "arrivalDate": "2026-08-19",
+      "releaseDate": "2026-11-19",
+      "status": "active-monitoring",
+      "today": {
+        "arrivalExam": "done",
+        "amInspection": "done",
+        "pmInspection": "due"
+      }
+    },
+    "timeline": [
+      {
+        "id": "insp-seed-26",
+        "kind": "inspection",
+        "at": 1792974960000,
+        "session": "AM",
+        "title": "AM inspection",
+        "text": "All normal · Food: Full · Stool: Firm · Urine: Yes",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-11",
+        "kind": "medication",
+        "at": 1792973400000,
+        "session": null,
+        "title": "Probiotic 5 mL oral given",
+        "text": "by Aisha Rahman · “Mixed with food”",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-23",
+        "kind": "medication",
+        "at": 1792971600000,
+        "session": null,
+        "title": "Omega-3 1 capsule given",
+        "text": "by Aisha Rahman",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "obs-104",
+        "kind": "observation",
+        "at": 1792971300000,
+        "session": null,
+        "title": "Observation",
+        "text": "KC2-2 Yang Yang soft stool this morning, but eating well and active.",
+        "by": "Siti Hassan",
+        "media": [
+          {
+            "id": "media-5",
+            "kind": "photo"
+          }
+        ],
+        "abnormal": true,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-10",
+        "kind": "medication",
+        "at": 1792930200000,
+        "session": null,
+        "title": "Probiotic 5 mL oral given",
+        "text": "by Aisha Rahman · “Mixed with food”",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "insp-seed-25",
+        "kind": "inspection",
+        "at": 1792916400000,
+        "session": "PM",
+        "title": "PM inspection",
+        "text": "All normal · Food: Full · Stool: Firm · Urine: Yes",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-16",
+        "kind": "medication",
+        "at": 1792890600000,
+        "session": null,
+        "title": "Ear drops 2 drops, left ear given",
+        "text": "by Aisha Rahman",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "insp-seed-24",
+        "kind": "inspection",
+        "at": 1792888440000,
+        "session": "AM",
+        "title": "AM inspection",
+        "text": "All normal · Food: Full · Stool: Firm · Urine: Yes",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-9",
+        "kind": "medication",
+        "at": 1792887000000,
+        "session": null,
+        "title": "Probiotic 5 mL oral given",
+        "text": "by Siti Hassan · “Mixed with food”",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-22",
+        "kind": "medication",
+        "at": 1792885200000,
+        "session": null,
+        "title": "Omega-3 1 capsule given",
+        "text": "by Aisha Rahman",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-8",
+        "kind": "medication",
+        "at": 1792843800000,
+        "session": null,
+        "title": "Probiotic 5 mL oral given",
+        "text": "by Aisha Rahman · “Mixed with food”",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "ev-5",
+        "kind": "case",
+        "at": 1792837800000,
+        "session": null,
+        "title": "Case C-2026-0142 updated",
+        "text": "AI routing confirmed by Aisha Rahman",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": "C-2026-0142"
+      },
+      {
+        "id": "obs-103",
+        "kind": "observation",
+        "at": 1792837200000,
+        "session": null,
+        "title": "Observation",
+        "text": "KC2-2 vomited once after dinner and only ate half her food.",
+        "by": "Aisha Rahman",
+        "media": [
+          {
+            "id": "media-3",
+            "kind": "video",
+            "durationSec": 12
+          },
+          {
+            "id": "media-4",
+            "kind": "photo"
+          }
+        ],
+        "abnormal": true,
+        "caseId": "C-2026-0142"
+      },
+      {
+        "id": "insp-seed-23",
+        "kind": "inspection",
+        "at": 1792830000000,
+        "session": "PM",
+        "title": "PM inspection",
+        "text": "Food: Full · Stool: Soft · Urine: Yes (abnormal)",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": true,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-15",
+        "kind": "medication",
+        "at": 1792804200000,
+        "session": null,
+        "title": "Ear drops 2 drops, left ear given",
+        "text": "by Siti Hassan",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "insp-seed-22",
+        "kind": "inspection",
+        "at": 1792801920000,
+        "session": "AM",
+        "title": "AM inspection",
+        "text": "All normal · Food: Full · Stool: Firm · Urine: Yes",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-7",
+        "kind": "medication",
+        "at": 1792800600000,
+        "session": null,
+        "title": "Probiotic 5 mL oral given",
+        "text": "by Siti Hassan · “Mixed with food”",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-21",
+        "kind": "medication",
+        "at": 1792798800000,
+        "session": null,
+        "title": "Omega-3 1 capsule given",
+        "text": "by Siti Hassan",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-6",
+        "kind": "medication",
+        "at": 1792757400000,
+        "session": null,
+        "title": "Probiotic 5 mL oral given",
+        "text": "by Aisha Rahman · “Mixed with food”",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "insp-seed-21",
+        "kind": "inspection",
+        "at": 1792743600000,
+        "session": "PM",
+        "title": "PM inspection",
+        "text": "All normal · Food: Full · Stool: Firm · Urine: Yes",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-14",
+        "kind": "medication",
+        "at": 1792717800000,
+        "session": null,
+        "title": "Ear drops 2 drops, left ear given",
+        "text": "by Aisha Rahman",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "insp-seed-20",
+        "kind": "inspection",
+        "at": 1792715400000,
+        "session": "AM",
+        "title": "AM inspection",
+        "text": "All normal · Food: Full · Stool: Firm · Urine: Yes",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-5",
+        "kind": "medication",
+        "at": 1792714200000,
+        "session": null,
+        "title": "Probiotic 5 mL oral given",
+        "text": "by Siti Hassan · “Mixed with food”",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-20",
+        "kind": "medication",
+        "at": 1792712400000,
+        "session": null,
+        "title": "Omega-3 1 capsule given",
+        "text": "by Aisha Rahman",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-4",
+        "kind": "medication",
+        "at": 1792671000000,
+        "session": null,
+        "title": "Probiotic 5 mL oral given",
+        "text": "by Aisha Rahman · “Mixed with food”",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "insp-seed-19",
+        "kind": "inspection",
+        "at": 1792657200000,
+        "session": "PM",
+        "title": "PM inspection",
+        "text": "All normal · Food: Full · Stool: Firm · Urine: Yes",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "ev-4",
+        "kind": "case",
+        "at": 1792650600000,
+        "session": null,
+        "title": "Case C-2026-0142 updated",
+        "text": "AI routing confirmed by Aisha Rahman",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": "C-2026-0142"
+      },
+      {
+        "id": "obs-102",
+        "kind": "observation",
+        "at": 1792649400000,
+        "session": null,
+        "title": "Observation",
+        "text": "Yang Yang had loose stool again after lunch, otherwise bright and alert.",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": true,
+        "caseId": "C-2026-0142"
+      },
+      {
+        "id": "adm-seed-13",
+        "kind": "medication",
+        "at": 1792631400000,
+        "session": null,
+        "title": "Ear drops 2 drops, left ear given",
+        "text": "by Siti Hassan",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "insp-seed-18",
+        "kind": "inspection",
+        "at": 1792628880000,
+        "session": "AM",
+        "title": "AM inspection",
+        "text": "Food: Half · Stool: Loose · Urine: Yes (abnormal)",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": true,
+        "caseId": "C-2026-0142"
+      },
+      {
+        "id": "adm-seed-3",
+        "kind": "medication",
+        "at": 1792627800000,
+        "session": null,
+        "title": "Probiotic 5 mL oral given",
+        "text": "by Siti Hassan · “Mixed with food”",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-19",
+        "kind": "medication",
+        "at": 1792626000000,
+        "session": null,
+        "title": "Omega-3 1 capsule given",
+        "text": "by Siti Hassan",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-2",
+        "kind": "medication",
+        "at": 1792584600000,
+        "session": null,
+        "title": "Probiotic 5 mL oral given",
+        "text": "by Aisha Rahman · “Mixed with food”",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "insp-seed-17",
+        "kind": "inspection",
+        "at": 1792570800000,
+        "session": "PM",
+        "title": "PM inspection",
+        "text": "All normal · Food: Full · Stool: Firm · Urine: Yes",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-12",
+        "kind": "medication",
+        "at": 1792545000000,
+        "session": null,
+        "title": "Ear drops 2 drops, left ear given",
+        "text": "by Aisha Rahman",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "insp-seed-16",
+        "kind": "inspection",
+        "at": 1792542360000,
+        "session": "AM",
+        "title": "AM inspection",
+        "text": "Food: Full · Stool: Soft · Urine: Yes · Soft stool in run (abnormal)",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": true,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-1",
+        "kind": "medication",
+        "at": 1792541400000,
+        "session": null,
+        "title": "Probiotic 5 mL oral given",
+        "text": "by Siti Hassan · “Mixed with food”",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-18",
+        "kind": "medication",
+        "at": 1792539600000,
+        "session": null,
+        "title": "Omega-3 1 capsule given",
+        "text": "by Aisha Rahman",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "insp-seed-15",
+        "kind": "inspection",
+        "at": 1792484400000,
+        "session": "PM",
+        "title": "PM inspection",
+        "text": "All normal · Food: Full · Stool: Firm · Urine: Yes",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "ev-1",
+        "kind": "case",
+        "at": 1792460700000,
+        "session": null,
+        "title": "Case C-2026-0142 opened",
+        "text": "From AI routing · Aisha Rahman",
+        "by": "Aisha Rahman",
+        "media": [],
+        "abnormal": false,
+        "caseId": "C-2026-0142"
+      },
+      {
+        "id": "obs-101",
+        "kind": "observation",
+        "at": 1792460400000,
+        "session": null,
+        "title": "Observation",
+        "text": "KC2-2 Yang Yang — soft stool this morning, left half of breakfast.",
+        "by": "Aisha Rahman",
+        "media": [
+          {
+            "id": "media-1",
+            "kind": "photo"
+          },
+          {
+            "id": "media-2",
+            "kind": "photo"
+          }
+        ],
+        "abnormal": true,
+        "caseId": "C-2026-0142"
+      },
+      {
+        "id": "insp-seed-14",
+        "kind": "inspection",
+        "at": 1792455840000,
+        "session": "AM",
+        "title": "AM inspection",
+        "text": "All normal · Food: Full · Stool: Firm · Urine: Yes",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "adm-seed-17",
+        "kind": "medication",
+        "at": 1792453200000,
+        "session": null,
+        "title": "Omega-3 1 capsule given",
+        "text": "by Siti Hassan",
+        "by": "Siti Hassan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      },
+      {
+        "id": "exam-seed-2",
+        "kind": "exam",
+        "at": 1787106600000,
+        "session": null,
+        "title": "Arrival exam",
+        "text": "Baseline recorded · Dr. Daniel Tan",
+        "by": "Dr. Daniel Tan",
+        "media": [],
+        "abnormal": false,
+        "caseId": null
+      }
+    ],
+    "summary": {
+      "statements": [
+        {
+          "text": "GI upset since 20/10 — 4 observations in 7 days",
+          "refs": [
+            1,
+            2
+          ]
+        },
+        {
+          "text": "On probiotic 5 mL oral 2x daily since 21/10",
+          "refs": [
+            3
+          ]
+        },
+        {
+          "text": "On ear drops 2 drops, left ear 1x daily since 21/10",
+          "refs": [
+            4
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "obs-101",
+          "kind": "observation",
+          "label": "Obs 20/10"
+        },
+        {
+          "id": "obs-104",
+          "kind": "observation",
+          "label": "Obs 26/10"
+        },
+        {
+          "id": "adm-seed-1",
+          "kind": "medication",
+          "label": "Med 21/10"
+        },
+        {
+          "id": "adm-seed-12",
+          "kind": "medication",
+          "label": "Med 21/10"
+        },
+        {
+          "id": "C-2026-0142",
+          "kind": "case",
+          "label": "Case C-2026-0142"
+        }
+      ],
+      "updatedAt": 1792981800000
+    },
+    "cases": [
+      {
+        "id": "C-2026-0142",
+        "animalId": "animal-2",
+        "finding": "GI upset — soft stool, reduced appetite",
+        "system": "GI",
+        "status": "review",
+        "openedAt": 1792460700000,
+        "updatedAt": 1792971360000,
+        "assigneeId": "staff-1",
+        "followUps": [
+          {
+            "id": "fu-1",
+            "text": "Collect stool sample",
+            "dueDate": "2026-10-23",
+            "done": true
+          },
+          {
+            "id": "fu-2",
+            "text": "Recheck hydration",
+            "dueDate": "2026-10-25",
+            "done": false
+          },
+          {
+            "id": "fu-3",
+            "text": "Vet review of diet",
+            "dueDate": "2026-10-27",
+            "done": false
+          }
+        ],
+        "events": [
+          {
+            "id": "ev-1",
+            "at": 1792460700000,
+            "kind": "opened",
+            "title": "Case opened from AI routing",
+            "by": "Aisha Rahman",
+            "observationId": "obs-101",
+            "detail": "Confirmed by Aisha Rahman"
+          },
+          {
+            "id": "ev-2",
+            "at": 1792463400000,
+            "kind": "assigned",
+            "title": "Assigned to Dr. Priya Nair",
+            "by": "Marcus Lim"
+          },
+          {
+            "id": "ev-3",
+            "at": 1792628100000,
+            "kind": "inspection",
+            "title": "AM inspection · Stool: Loose",
+            "by": "Siti Hassan",
+            "inspectionId": "insp-seed-18"
+          },
+          {
+            "id": "ev-4",
+            "at": 1792650600000,
+            "kind": "observation",
+            "title": "Observation routed by AI · update case",
+            "by": "Aisha Rahman",
+            "observationId": "obs-102",
+            "detail": "Loose stool again after lunch"
+          },
+          {
+            "id": "ev-5",
+            "at": 1792837800000,
+            "kind": "observation",
+            "title": "Observation routed by AI · update case",
+            "by": "Aisha Rahman",
+            "observationId": "obs-103",
+            "detail": "Vomited once after dinner"
+          },
+          {
+            "id": "ev-6",
+            "at": 1792971360000,
+            "kind": "observation",
+            "title": "New observation needs review",
+            "by": "AI",
+            "observationId": "obs-104",
+            "detail": "Soft stool this morning"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "media-1",
+            "kind": "photo"
+          },
+          {
+            "id": "media-2",
+            "kind": "photo"
+          },
+          {
+            "id": "media-3",
+            "kind": "video",
+            "durationSec": 12
+          },
+          {
+            "id": "media-4",
+            "kind": "photo"
+          },
+          {
+            "id": "media-5",
+            "kind": "photo"
+          }
+        ],
+        "closedAt": null,
+        "closeReason": null,
+        "reopenedAt": null
+      }
+    ],
+    "openCases": [
+      {
+        "id": "C-2026-0142",
+        "animalId": "animal-2",
+        "finding": "GI upset — soft stool, reduced appetite",
+        "system": "GI",
+        "status": "review",
+        "openedAt": 1792460700000,
+        "updatedAt": 1792971360000,
+        "assigneeId": "staff-1",
+        "followUps": [
+          {
+            "id": "fu-1",
+            "text": "Collect stool sample",
+            "dueDate": "2026-10-23",
+            "done": true
+          },
+          {
+            "id": "fu-2",
+            "text": "Recheck hydration",
+            "dueDate": "2026-10-25",
+            "done": false
+          },
+          {
+            "id": "fu-3",
+            "text": "Vet review of diet",
+            "dueDate": "2026-10-27",
+            "done": false
+          }
+        ],
+        "events": [
+          {
+            "id": "ev-1",
+            "at": 1792460700000,
+            "kind": "opened",
+            "title": "Case opened from AI routing",
+            "by": "Aisha Rahman",
+            "observationId": "obs-101",
+            "detail": "Confirmed by Aisha Rahman"
+          },
+          {
+            "id": "ev-2",
+            "at": 1792463400000,
+            "kind": "assigned",
+            "title": "Assigned to Dr. Priya Nair",
+            "by": "Marcus Lim"
+          },
+          {
+            "id": "ev-3",
+            "at": 1792628100000,
+            "kind": "inspection",
+            "title": "AM inspection · Stool: Loose",
+            "by": "Siti Hassan",
+            "inspectionId": "insp-seed-18"
+          },
+          {
+            "id": "ev-4",
+            "at": 1792650600000,
+            "kind": "observation",
+            "title": "Observation routed by AI · update case",
+            "by": "Aisha Rahman",
+            "observationId": "obs-102",
+            "detail": "Loose stool again after lunch"
+          },
+          {
+            "id": "ev-5",
+            "at": 1792837800000,
+            "kind": "observation",
+            "title": "Observation routed by AI · update case",
+            "by": "Aisha Rahman",
+            "observationId": "obs-103",
+            "detail": "Vomited once after dinner"
+          },
+          {
+            "id": "ev-6",
+            "at": 1792971360000,
+            "kind": "observation",
+            "title": "New observation needs review",
+            "by": "AI",
+            "observationId": "obs-104",
+            "detail": "Soft stool this morning"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "media-1",
+            "kind": "photo"
+          },
+          {
+            "id": "media-2",
+            "kind": "photo"
+          },
+          {
+            "id": "media-3",
+            "kind": "video",
+            "durationSec": 12
+          },
+          {
+            "id": "media-4",
+            "kind": "photo"
+          },
+          {
+            "id": "media-5",
+            "kind": "photo"
+          }
+        ],
+        "closedAt": null,
+        "closeReason": null,
+        "reopenedAt": null
+      }
+    ],
+    "medicationCount": 3,
+    "stayDay": 69,
+    "stayLength": 92,
+    "today": {
+      "arrivalExam": {
+        "status": "done",
+        "time": null,
+        "at": 1787106600000
+      },
+      "am": {
+        "status": "done",
+        "time": null,
+        "at": 1792974960000
+      },
+      "pm": {
+        "status": "due",
+        "time": "16:00",
+        "at": null
+      }
+    }
+  }
+}

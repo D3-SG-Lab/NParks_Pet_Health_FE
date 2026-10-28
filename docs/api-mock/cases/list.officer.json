@@ -1,0 +1,445 @@
+{
+  "endpoint": "GET /cases",
+  "description": "Cases tab: every case in scope, open work first then most recently updated. Filters (open / review / last 7 days / mine) and search run on the device.",
+  "role": "officer",
+  "response": [
+    {
+      "healthCase": {
+        "id": "C-2026-0142",
+        "animalId": "animal-2",
+        "finding": "GI upset — soft stool, reduced appetite",
+        "system": "GI",
+        "status": "review",
+        "openedAt": 1792460700000,
+        "updatedAt": 1792971360000,
+        "assigneeId": "staff-1",
+        "followUps": [
+          {
+            "id": "fu-1",
+            "text": "Collect stool sample",
+            "dueDate": "2026-10-23",
+            "done": true
+          },
+          {
+            "id": "fu-2",
+            "text": "Recheck hydration",
+            "dueDate": "2026-10-25",
+            "done": false
+          },
+          {
+            "id": "fu-3",
+            "text": "Vet review of diet",
+            "dueDate": "2026-10-27",
+            "done": false
+          }
+        ],
+        "events": [
+          {
+            "id": "ev-1",
+            "at": 1792460700000,
+            "kind": "opened",
+            "title": "Case opened from AI routing",
+            "by": "Aisha Rahman",
+            "observationId": "obs-101",
+            "detail": "Confirmed by Aisha Rahman"
+          },
+          {
+            "id": "ev-2",
+            "at": 1792463400000,
+            "kind": "assigned",
+            "title": "Assigned to Dr. Priya Nair",
+            "by": "Marcus Lim"
+          },
+          {
+            "id": "ev-3",
+            "at": 1792628100000,
+            "kind": "inspection",
+            "title": "AM inspection · Stool: Loose",
+            "by": "Siti Hassan",
+            "inspectionId": "insp-seed-18"
+          },
+          {
+            "id": "ev-4",
+            "at": 1792650600000,
+            "kind": "observation",
+            "title": "Observation routed by AI · update case",
+            "by": "Aisha Rahman",
+            "observationId": "obs-102",
+            "detail": "Loose stool again after lunch"
+          },
+          {
+            "id": "ev-5",
+            "at": 1792837800000,
+            "kind": "observation",
+            "title": "Observation routed by AI · update case",
+            "by": "Aisha Rahman",
+            "observationId": "obs-103",
+            "detail": "Vomited once after dinner"
+          },
+          {
+            "id": "ev-6",
+            "at": 1792971360000,
+            "kind": "observation",
+            "title": "New observation needs review",
+            "by": "AI",
+            "observationId": "obs-104",
+            "detail": "Soft stool this morning"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "media-1",
+            "kind": "photo"
+          },
+          {
+            "id": "media-2",
+            "kind": "photo"
+          },
+          {
+            "id": "media-3",
+            "kind": "video",
+            "durationSec": 12
+          },
+          {
+            "id": "media-4",
+            "kind": "photo"
+          },
+          {
+            "id": "media-5",
+            "kind": "photo"
+          }
+        ],
+        "closedAt": null,
+        "closeReason": null,
+        "reopenedAt": null
+      },
+      "animal": {
+        "id": "animal-2",
+        "name": "Yang Yang",
+        "kennel": "KC2-2",
+        "species": "Dog",
+        "sex": "Female",
+        "countryCode": "CN",
+        "microchip": "982000123450002",
+        "dateOfBirth": "2021-11-02",
+        "arrivalDate": "2026-08-19",
+        "releaseDate": "2026-11-19",
+        "status": "active-monitoring",
+        "today": {
+          "arrivalExam": "done",
+          "amInspection": "done",
+          "pmInspection": "due"
+        }
+      },
+      "assignee": {
+        "id": "staff-1",
+        "name": "Dr. Priya Nair",
+        "role": "vet"
+      },
+      "overdueFollowUps": 1
+    },
+    {
+      "healthCase": {
+        "id": "C-2026-0138",
+        "animalId": "animal-4",
+        "finding": "Reduced appetite, leaving food",
+        "system": "GI",
+        "status": "open",
+        "openedAt": 1792545600000,
+        "updatedAt": 1792916400000,
+        "assigneeId": "staff-3",
+        "followUps": [
+          {
+            "id": "fu-4",
+            "text": "Weigh Milo",
+            "dueDate": "2026-10-25",
+            "done": false
+          },
+          {
+            "id": "fu-5",
+            "text": "Offer a bland diet",
+            "dueDate": "2026-10-27",
+            "done": false
+          }
+        ],
+        "events": [
+          {
+            "id": "ev-7",
+            "at": 1792545600000,
+            "kind": "opened",
+            "title": "Case opened from AI routing",
+            "by": "Aisha Rahman",
+            "observationId": "obs-201",
+            "detail": "Confirmed by Aisha Rahman"
+          },
+          {
+            "id": "ev-8",
+            "at": 1792545900000,
+            "kind": "assigned",
+            "title": "Assigned to Aisha Rahman",
+            "by": "Marcus Lim"
+          },
+          {
+            "id": "ev-9",
+            "at": 1792714800000,
+            "kind": "inspection",
+            "title": "AM inspection · Food: Half",
+            "by": "Siti Hassan",
+            "inspectionId": "insp-seed-45"
+          },
+          {
+            "id": "ev-10",
+            "at": 1792916400000,
+            "kind": "inspection",
+            "title": "PM inspection · Food: Half",
+            "by": "Aisha Rahman",
+            "inspectionId": "insp-seed-50"
+          }
+        ],
+        "evidence": [],
+        "closedAt": null,
+        "closeReason": null,
+        "reopenedAt": null
+      },
+      "animal": {
+        "id": "animal-4",
+        "name": "Milo",
+        "kennel": "KC2-4",
+        "species": "Dog",
+        "sex": "Male",
+        "countryCode": "NZ",
+        "microchip": "982000123450004",
+        "dateOfBirth": "2020-07-09",
+        "arrivalDate": "2026-08-12",
+        "releaseDate": "2026-11-12",
+        "status": "active-monitoring",
+        "today": {
+          "arrivalExam": "done",
+          "amInspection": "done",
+          "pmInspection": "due"
+        }
+      },
+      "assignee": {
+        "id": "staff-3",
+        "name": "Aisha Rahman",
+        "role": "officer"
+      },
+      "overdueFollowUps": 1
+    },
+    {
+      "healthCase": {
+        "id": "C-2026-0121",
+        "animalId": "animal-5",
+        "finding": "Sneezing, clear nasal discharge",
+        "system": "Respiratory",
+        "status": "open",
+        "openedAt": 1791601200000,
+        "updatedAt": 1792808700000,
+        "assigneeId": "staff-2",
+        "followUps": [
+          {
+            "id": "fu-6",
+            "text": "Nebulise twice daily",
+            "dueDate": "2026-10-29",
+            "done": false
+          }
+        ],
+        "events": [
+          {
+            "id": "ev-11",
+            "at": 1791601200000,
+            "kind": "opened",
+            "title": "Case opened from AI routing",
+            "by": "Aisha Rahman",
+            "detail": "Confirmed by Aisha Rahman"
+          },
+          {
+            "id": "ev-12",
+            "at": 1791603000000,
+            "kind": "assigned",
+            "title": "Assigned to Dr. Daniel Tan",
+            "by": "Marcus Lim"
+          },
+          {
+            "id": "ev-13",
+            "at": 1792220400000,
+            "kind": "closed",
+            "title": "Case closed · Resolved",
+            "by": "Dr. Daniel Tan",
+            "detail": "No signs for 5 days"
+          },
+          {
+            "id": "ev-14",
+            "at": 1792808700000,
+            "kind": "reopened",
+            "title": "Case reopened · related signs",
+            "by": "Aisha Rahman",
+            "observationId": "obs-301",
+            "detail": "Sneezing again with nasal discharge"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "media-6",
+            "kind": "photo"
+          }
+        ],
+        "closedAt": null,
+        "closeReason": null,
+        "reopenedAt": 1792808700000
+      },
+      "animal": {
+        "id": "animal-5",
+        "name": "Luna",
+        "kennel": "KC2-5",
+        "species": "Cat",
+        "sex": "Female",
+        "countryCode": "GB",
+        "microchip": "982000123450005",
+        "dateOfBirth": "2022-09-30",
+        "arrivalDate": "2026-08-10",
+        "releaseDate": "2026-11-10",
+        "status": "active-monitoring",
+        "today": {
+          "arrivalExam": "done",
+          "amInspection": "due",
+          "pmInspection": "due"
+        }
+      },
+      "assignee": {
+        "id": "staff-2",
+        "name": "Dr. Daniel Tan",
+        "role": "vet"
+      },
+      "overdueFollowUps": 0
+    },
+    {
+      "healthCase": {
+        "id": "C-2026-0107",
+        "animalId": "animal-1",
+        "finding": "Skin irritation — resolved",
+        "system": "Skin",
+        "status": "closed",
+        "openedAt": 1791248400000,
+        "updatedAt": 1792303200000,
+        "assigneeId": "staff-1",
+        "followUps": [
+          {
+            "id": "fu-7",
+            "text": "Medicated shampoo for 10 days",
+            "dueDate": "2026-10-16",
+            "done": true
+          }
+        ],
+        "events": [
+          {
+            "id": "ev-15",
+            "at": 1791248400000,
+            "kind": "opened",
+            "title": "Case opened from AI routing",
+            "by": "Aisha Rahman"
+          },
+          {
+            "id": "ev-16",
+            "at": 1791250200000,
+            "kind": "assigned",
+            "title": "Assigned to Dr. Priya Nair",
+            "by": "Marcus Lim"
+          },
+          {
+            "id": "ev-17",
+            "at": 1792303200000,
+            "kind": "closed",
+            "title": "Case closed · Resolved after treatment",
+            "by": "Dr. Priya Nair"
+          }
+        ],
+        "evidence": [],
+        "closedAt": 1792303200000,
+        "closeReason": "Resolved after treatment",
+        "reopenedAt": null
+      },
+      "animal": {
+        "id": "animal-1",
+        "name": "Biscuit",
+        "kennel": "KC2-1",
+        "species": "Dog",
+        "sex": "Male",
+        "countryCode": "AU",
+        "microchip": "982000123450001",
+        "dateOfBirth": "2022-03-14",
+        "arrivalDate": "2026-08-18",
+        "releaseDate": "2026-11-18",
+        "status": "active-monitoring",
+        "today": {
+          "arrivalExam": "done",
+          "amInspection": "done",
+          "pmInspection": "due"
+        }
+      },
+      "assignee": {
+        "id": "staff-1",
+        "name": "Dr. Priya Nair",
+        "role": "vet"
+      },
+      "overdueFollowUps": 0
+    },
+    {
+      "healthCase": {
+        "id": "C-2026-0099",
+        "animalId": "animal-7",
+        "finding": "Eye discharge — resolved",
+        "system": "Eyes",
+        "status": "closed",
+        "openedAt": 1791424800000,
+        "updatedAt": 1791946800000,
+        "assigneeId": "staff-2",
+        "followUps": [],
+        "events": [
+          {
+            "id": "ev-18",
+            "at": 1791424800000,
+            "kind": "opened",
+            "title": "Case opened from AI routing",
+            "by": "Siti Hassan"
+          },
+          {
+            "id": "ev-19",
+            "at": 1791946800000,
+            "kind": "closed",
+            "title": "Case closed · Resolved",
+            "by": "Dr. Daniel Tan"
+          }
+        ],
+        "evidence": [],
+        "closedAt": 1791946800000,
+        "closeReason": "Resolved",
+        "reopenedAt": null
+      },
+      "animal": {
+        "id": "animal-7",
+        "name": "Simba",
+        "kennel": "KC1-1",
+        "species": "Cat",
+        "sex": "Male",
+        "countryCode": "TH",
+        "microchip": "982000123450007",
+        "dateOfBirth": "2024-02-11",
+        "arrivalDate": "2026-08-21",
+        "releaseDate": "2026-11-21",
+        "status": "active-monitoring",
+        "today": {
+          "arrivalExam": "done",
+          "amInspection": "done",
+          "pmInspection": "due"
+        }
+      },
+      "assignee": {
+        "id": "staff-2",
+        "name": "Dr. Daniel Tan",
+        "role": "vet"
+      },
+      "overdueFollowUps": 0
+    }
+  ]
+}

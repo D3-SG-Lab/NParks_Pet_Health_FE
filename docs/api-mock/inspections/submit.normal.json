@@ -1,0 +1,51 @@
+{
+  "endpoint": "POST /inspections",
+  "description": "Record an AM/PM inspection. Time and user come from the server/session. One AM and one PM per animal per day.",
+  "role": "officer",
+  "request": {
+    "animalId": "animal-3",
+    "session": "AM",
+    "input": {
+      "mentation": "Responsive",
+      "systems": {
+        "skin": "normal",
+        "eyes": "normal",
+        "nose": "normal",
+        "ears": "normal",
+        "mouth": "normal",
+        "hydration": "normal",
+        "cardiorespiratory": "normal"
+      },
+      "food": "Full",
+      "stool": "Firm",
+      "urine": "Yes",
+      "otherFindings": ""
+    }
+  },
+  "response": {
+    "record": {
+      "mentation": "Responsive",
+      "systems": {
+        "skin": "normal",
+        "eyes": "normal",
+        "nose": "normal",
+        "ears": "normal",
+        "mouth": "normal",
+        "hydration": "normal",
+        "cardiorespiratory": "normal"
+      },
+      "food": "Full",
+      "stool": "Firm",
+      "urine": "Yes",
+      "otherFindings": "",
+      "id": "insp-1000",
+      "animalId": "animal-3",
+      "date": "2026-10-26",
+      "session": "AM",
+      "recordedAt": 1792981800000,
+      "recordedBy": "Aisha Rahman"
+    },
+    "linkedCaseId": null,
+    "sentForReview": false
+  }
+}

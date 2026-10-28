@@ -1,0 +1,97 @@
+{
+  "endpoint": "GET /cases/{caseId}",
+  "description": "Case detail for a case in \"open\" status, with the AI case summary.",
+  "role": "officer",
+  "request": {
+    "caseId": "C-2026-0138"
+  },
+  "response": {
+    "healthCase": {
+      "id": "C-2026-0138",
+      "animalId": "animal-4",
+      "finding": "Reduced appetite, leaving food",
+      "system": "GI",
+      "status": "open",
+      "openedAt": 1792545600000,
+      "updatedAt": 1792916400000,
+      "assigneeId": "staff-3",
+      "followUps": [
+        {
+          "id": "fu-4",
+          "text": "Weigh Milo",
+          "dueDate": "2026-10-25",
+          "done": false
+        },
+        {
+          "id": "fu-5",
+          "text": "Offer a bland diet",
+          "dueDate": "2026-10-27",
+          "done": false
+        }
+      ],
+      "events": [
+        {
+          "id": "ev-7",
+          "at": 1792545600000,
+          "kind": "opened",
+          "title": "Case opened from AI routing",
+          "by": "Aisha Rahman",
+          "observationId": "obs-201",
+          "detail": "Confirmed by Aisha Rahman"
+        },
+        {
+          "id": "ev-8",
+          "at": 1792545900000,
+          "kind": "assigned",
+          "title": "Assigned to Aisha Rahman",
+          "by": "Marcus Lim"
+        },
+        {
+          "id": "ev-9",
+          "at": 1792714800000,
+          "kind": "inspection",
+          "title": "AM inspection · Food: Half",
+          "by": "Siti Hassan",
+          "inspectionId": "insp-seed-45"
+        },
+        {
+          "id": "ev-10",
+          "at": 1792916400000,
+          "kind": "inspection",
+          "title": "PM inspection · Food: Half",
+          "by": "Aisha Rahman",
+          "inspectionId": "insp-seed-50"
+        }
+      ],
+      "evidence": [],
+      "closedAt": null,
+      "closeReason": null,
+      "reopenedAt": null
+    },
+    "animal": {
+      "id": "animal-4",
+      "name": "Milo",
+      "kennel": "KC2-4",
+      "species": "Dog",
+      "sex": "Male",
+      "countryCode": "NZ",
+      "microchip": "982000123450004",
+      "dateOfBirth": "2020-07-09",
+      "arrivalDate": "2026-08-12",
+      "releaseDate": "2026-11-12",
+      "status": "active-monitoring",
+      "today": {
+        "arrivalExam": "done",
+        "amInspection": "done",
+        "pmInspection": "due"
+      }
+    },
+    "assignee": {
+      "id": "staff-3",
+      "name": "Aisha Rahman",
+      "role": "officer"
+    },
+    "summary": "Reduced appetite, leaving food since 21/10, 3 linked records in 7 days. Latest: PM inspection · Food: Half (25/10).",
+    "pendingObservationId": null
+  }
+}

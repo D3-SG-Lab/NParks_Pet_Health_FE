@@ -1,0 +1,30 @@
+{
+  "endpoint": "POST /inspections",
+  "description": "Second inspection for the same animal, day and session. Suggested status: 409.",
+  "role": "officer",
+  "request": {
+    "animalId": "animal-3",
+    "session": "AM",
+    "input": {
+      "mentation": "Responsive",
+      "systems": {
+        "skin": "normal",
+        "eyes": "normal",
+        "nose": "normal",
+        "ears": "normal",
+        "mouth": "normal",
+        "hydration": "normal",
+        "cardiorespiratory": "normal"
+      },
+      "food": "Full",
+      "stool": "Firm",
+      "urine": "Yes",
+      "otherFindings": ""
+    }
+  },
+  "response": {
+    "error": "InspectionError",
+    "kind": "already_recorded",
+    "message": "The AM inspection for Mochi was already recorded."
+  }
+}

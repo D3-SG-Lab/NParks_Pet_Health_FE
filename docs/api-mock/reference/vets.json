@@ -1,0 +1,18 @@
+{
+  "endpoint": "GET /vets",
+  "description": "Examining vet picker on Arrival Exam.",
+  "response": [
+    {
+      "id": "vet-1",
+      "name": "Dr. Priya Nair"
+    },
+    {
+      "id": "vet-2",
+      "name": "Dr. Daniel Tan"
+    },
+    {
+      "id": "vet-3",
+      "name": "Dr. Aisha Rahman"
+    }
+  ]
+}

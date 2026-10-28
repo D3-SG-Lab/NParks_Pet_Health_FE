@@ -1,0 +1,9 @@
+{
+  "endpoint": "(device only)",
+  "description": "Pending sync screen. This is the device outbox, not a backend endpoint; included so the shape is documented.",
+  "response": {
+    "online": true,
+    "items": [],
+    "syncing": false
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "endpoint": "GET /observations/{observationId}",
+  "description": "The same observation once the AI result is ready.",
+  "request": {
+    "observationId": "obs-1000"
+  },
+  "response": {
+    "observation": {
+      "id": "obs-1000",
+      "animalId": "animal-2",
+      "text": "Yang Yang vomited twice this morning and left half the food.",
+      "media": [
+        {
+          "id": "media-1",
+          "kind": "photo"
+        }
+      ],
+      "submittedAt": 1792981800000,
+      "submittedBy": "Aisha Rahman",
+      "submittedByRole": "officer",
+      "source": "observation",
+      "ai": {
+        "match": {
+          "animalId": "animal-2",
+          "confidence": 1,
+          "selectedByUser": true
+        },
+        "candidates": [],
+        "extraction": {
+          "signs": [
+            {
+              "code": "vomiting",
+              "label": "Vomiting",
+              "system": "GI"
+            },
+            {
+              "code": "reduced-appetite",
+              "label": "Reduced appetite",
+              "system": "GI"
+            }
+          ],
+          "food": "Half",
+          "stool": null,
+          "onsetDate": "2026-10-26",
+          "severity": "mild"
+        },
+        "suggestion": {
+          "action": "update-case",
+          "caseId": "C-2026-0142",
+          "rationale": "Signs match open GI case opened 20/10."
+        },
+        "processedAt": 1792981800000,
+        "durationSec": 1
+      },
+      "status": "awaiting-confirmation",
+      "routing": null,
+      "readyAt": 1792981800000,
+      "aiUnavailable": false
+    },
+    "animal": {
+      "id": "animal-2",
+      "name": "Yang Yang",
+      "kennel": "KC2-2",
+      "species": "Dog",
+      "sex": "Female",
+      "countryCode": "CN",
+      "microchip": "982000123450002",
+      "dateOfBirth": "2021-11-02",
+      "arrivalDate": "2026-08-19",
+      "releaseDate": "2026-11-19",
+      "status": "active-monitoring",
+      "today": {
+        "arrivalExam": "done",
+        "amInspection": "done",
+        "pmInspection": "due"
+      }
+    },
+    "cases": [
+      {
+        "id": "C-2026-0142",
+        "animalId": "animal-2",
+        "finding": "GI upset — soft stool, reduced appetite",
+        "system": "GI",
+        "status": "review",
+        "openedAt": 1792460700000,
+        "updatedAt": 1792971360000,
+        "assigneeId": "staff-1",
+        "followUps": [
+          {
+            "id": "fu-1",
+            "text": "Collect stool sample",
+            "dueDate": "2026-10-23",
+            "done": true
+          },
+          {
+            "id": "fu-2",
+            "text": "Recheck hydration",
+            "dueDate": "2026-10-25",
+            "done": false
+          },
+          {
+            "id": "fu-3",
+            "text": "Vet review of diet",
+            "dueDate": "2026-10-27",
+            "done": false
+          }
+        ],
+        "events": [
+          {
+            "id": "ev-1",
+            "at": 1792460700000,
+            "kind": "opened",
+            "title": "Case opened from AI routing",
+            "by": "Aisha Rahman",
+            "observationId": "obs-101",
+            "detail": "Confirmed by Aisha Rahman"
+          },
+          {
+            "id": "ev-2",
+            "at": 1792463400000,
+            "kind": "assigned",
+            "title": "Assigned to Dr. Priya Nair",
+            "by": "Marcus Lim"
+          },
+          {
+            "id": "ev-3",
+            "at": 1792628100000,
+            "kind": "inspection",
+            "title": "AM inspection · Stool: Loose",
+            "by": "Siti Hassan",
+            "inspectionId": "insp-seed-18"
+          },
+          {
+            "id": "ev-4",
+            "at": 1792650600000,
+            "kind": "observation",
+            "title": "Observation routed by AI · update case",
+            "by": "Aisha Rahman",
+            "observationId": "obs-102",
+            "detail": "Loose stool again after lunch"
+          },
+          {
+            "id": "ev-5",
+            "at": 1792837800000,
+            "kind": "observation",
+            "title": "Observation routed by AI · update case",
+            "by": "Aisha Rahman",
+            "observationId": "obs-103",
+            "detail": "Vomited once after dinner"
+          },
+          {
+            "id": "ev-6",
+            "at": 1792971360000,
+            "kind": "observation",
+            "title": "New observation needs review",
+            "by": "AI",
+            "observationId": "obs-104",
+            "detail": "Soft stool this morning"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "media-1",
+            "kind": "photo"
+          },
+          {
+            "id": "media-2",
+            "kind": "photo"
+          },
+          {
+            "id": "media-3",
+            "kind": "video",
+            "durationSec": 12
+          },
+          {
+            "id": "media-4",
+            "kind": "photo"
+          },
+          {
+            "id": "media-5",
+            "kind": "photo"
+          }
+        ],
+        "closedAt": null,
+        "closeReason": null,
+        "reopenedAt": null
+      }
+    ]
+  }
+}

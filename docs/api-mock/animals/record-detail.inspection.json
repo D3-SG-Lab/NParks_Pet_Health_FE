@@ -1,0 +1,33 @@
+{
+  "endpoint": "GET /records/{kind}/{id}",
+  "description": "Record detail sheet for a inspection timeline entry.",
+  "request": {
+    "kind": "inspection",
+    "id": "insp-seed-13"
+  },
+  "response": {
+    "kind": "inspection",
+    "record": {
+      "id": "insp-seed-13",
+      "animalId": "animal-1",
+      "date": "2026-10-26",
+      "session": "AM",
+      "mentation": "Responsive",
+      "systems": {
+        "skin": "normal",
+        "eyes": "normal",
+        "nose": "normal",
+        "ears": "normal",
+        "mouth": "normal",
+        "hydration": "normal",
+        "cardiorespiratory": "normal"
+      },
+      "food": "Full",
+      "stool": "Firm",
+      "urine": "Yes",
+      "otherFindings": "",
+      "recordedAt": 1792974180000,
+      "recordedBy": "Aisha Rahman"
+    }
+  }
+}

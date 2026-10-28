@@ -1,0 +1,58 @@
+{
+  "endpoint": "GET /records/{kind}/{id}",
+  "description": "Record detail sheet for a observation timeline entry.",
+  "request": {
+    "kind": "observation",
+    "id": "obs-104"
+  },
+  "response": {
+    "kind": "observation",
+    "record": {
+      "id": "obs-104",
+      "animalId": null,
+      "text": "KC2-2 Yang Yang soft stool this morning, but eating well and active.",
+      "media": [
+        {
+          "id": "media-5",
+          "kind": "photo"
+        }
+      ],
+      "submittedAt": 1792971300000,
+      "submittedBy": "Siti Hassan",
+      "submittedByRole": "contractor",
+      "source": "observation",
+      "ai": {
+        "match": {
+          "animalId": "animal-2",
+          "confidence": 0.94,
+          "selectedByUser": false
+        },
+        "candidates": [],
+        "extraction": {
+          "signs": [
+            {
+              "code": "soft-stool",
+              "label": "Soft stool",
+              "system": "GI"
+            }
+          ],
+          "food": "Full",
+          "stool": "Soft",
+          "onsetDate": "2026-10-26",
+          "severity": "mild"
+        },
+        "suggestion": {
+          "action": "update-case",
+          "caseId": "C-2026-0142",
+          "rationale": "Signs match the open GI case."
+        },
+        "processedAt": 1792971360000,
+        "durationSec": 9
+      },
+      "status": "awaiting-confirmation",
+      "routing": null,
+      "readyAt": null,
+      "aiUnavailable": false
+    }
+  }
+}

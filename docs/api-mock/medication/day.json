@@ -1,0 +1,96 @@
+{
+  "endpoint": "GET /animals/{animalId}/medication?date={YYYY-MM-DD}",
+  "description": "Medication for one animal: today's dose slots with status (upcoming / due / overdue / administered).",
+  "role": "officer",
+  "request": {
+    "animalId": "animal-2",
+    "date": "2026-10-26"
+  },
+  "response": {
+    "animal": {
+      "id": "animal-2",
+      "name": "Yang Yang",
+      "kennel": "KC2-2",
+      "species": "Dog",
+      "sex": "Female",
+      "countryCode": "CN",
+      "microchip": "982000123450002",
+      "dateOfBirth": "2021-11-02",
+      "arrivalDate": "2026-08-19",
+      "releaseDate": "2026-11-19",
+      "status": "active-monitoring",
+      "today": {
+        "arrivalExam": "done",
+        "amInspection": "done",
+        "pmInspection": "due"
+      }
+    },
+    "scheduleCount": 3,
+    "slots": [
+      {
+        "slot": "2026-10-26T07:30",
+        "scheduleId": "med-5",
+        "item": "Omega-3",
+        "dose": "1 capsule",
+        "frequency": "1x daily",
+        "startDate": "2026-10-16",
+        "endDate": "2026-11-05",
+        "time": "07:30",
+        "status": "administered",
+        "administration": {
+          "id": "adm-seed-23",
+          "scheduleId": "med-5",
+          "animalId": "animal-2",
+          "slot": "2026-10-26T07:30",
+          "administeredAt": 1792971600000,
+          "by": "Aisha Rahman",
+          "remarks": ""
+        }
+      },
+      {
+        "slot": "2026-10-26T08:00",
+        "scheduleId": "med-1",
+        "item": "Probiotic",
+        "dose": "5 mL oral",
+        "frequency": "2x daily",
+        "startDate": "2026-10-21",
+        "endDate": "2026-10-31",
+        "time": "08:00",
+        "status": "administered",
+        "administration": {
+          "id": "adm-seed-11",
+          "scheduleId": "med-1",
+          "animalId": "animal-2",
+          "slot": "2026-10-26T08:00",
+          "administeredAt": 1792973400000,
+          "by": "Aisha Rahman",
+          "remarks": "Mixed with food"
+        }
+      },
+      {
+        "slot": "2026-10-26T09:00",
+        "scheduleId": "med-2",
+        "item": "Ear drops",
+        "dose": "2 drops, left ear",
+        "frequency": "1x daily",
+        "startDate": "2026-10-21",
+        "endDate": "2026-10-29",
+        "time": "09:00",
+        "status": "overdue",
+        "administration": null
+      },
+      {
+        "slot": "2026-10-26T20:00",
+        "scheduleId": "med-1",
+        "item": "Probiotic",
+        "dose": "5 mL oral",
+        "frequency": "2x daily",
+        "startDate": "2026-10-21",
+        "endDate": "2026-10-31",
+        "time": "20:00",
+        "status": "upcoming",
+        "administration": null
+      }
+    ]
+  }
+}

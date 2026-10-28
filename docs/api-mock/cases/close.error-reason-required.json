@@ -1,0 +1,15 @@
+{
+  "endpoint": "POST /cases/{caseId}/close",
+  "description": "Closing a case needs a reason. Suggested status: 400.",
+  "role": "officer",
+  "request": {
+    "caseId": "C-2026-0142",
+    "reason": "",
+    "note": ""
+  },
+  "response": {
+    "error": "CaseError",
+    "kind": "reason_required",
+    "message": "Choose a reason for closing the case."
+  }
+}

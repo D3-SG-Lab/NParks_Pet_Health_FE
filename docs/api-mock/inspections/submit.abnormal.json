@@ -1,0 +1,51 @@
+{
+  "endpoint": "POST /inspections",
+  "description": "Inspection with abnormal items: linked to a matching open case, or sent to the review queue for AI routing.",
+  "role": "officer",
+  "request": {
+    "animalId": "animal-3",
+    "session": "AM",
+    "input": {
+      "mentation": "Responsive",
+      "systems": {
+        "skin": "abnormal",
+        "eyes": "normal",
+        "nose": "normal",
+        "ears": "normal",
+        "mouth": "normal",
+        "hydration": "normal",
+        "cardiorespiratory": "normal"
+      },
+      "food": "Full",
+      "stool": "Firm",
+      "urine": "Yes",
+      "otherFindings": "Red patch on left flank, scratching."
+    }
+  },
+  "response": {
+    "record": {
+      "mentation": "Responsive",
+      "systems": {
+        "skin": "abnormal",
+        "eyes": "normal",
+        "nose": "normal",
+        "ears": "normal",
+        "mouth": "normal",
+        "hydration": "normal",
+        "cardiorespiratory": "normal"
+      },
+      "food": "Full",
+      "stool": "Firm",
+      "urine": "Yes",
+      "otherFindings": "Red patch on left flank, scratching.",
+      "id": "insp-1000",
+      "animalId": "animal-3",
+      "date": "2026-10-26",
+      "session": "AM",
+      "recordedAt": 1792981800000,
+      "recordedBy": "Aisha Rahman"
+    },
+    "linkedCaseId": null,
+    "sentForReview": true
+  }
+}
