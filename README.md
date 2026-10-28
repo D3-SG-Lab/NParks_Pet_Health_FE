@@ -14,7 +14,7 @@ npm run web             # http://localhost:8081 — or npm run ios / npm run and
 
 Only `EXPO_PUBLIC_*` variables reach the bundle; they are read in `src/config/env.ts`.
 
-- `EXPO_PUBLIC_AUTH_BYPASS=officer|contractor`: development only. Every launch starts signed in as that role, so you need no identity provider.
+- `EXPO_PUBLIC_AUTH_BYPASS=officer|contractor`: development only. Every launch starts signed in as that role, so you need no identity provider. To switch roles, open `/sign-in` and pick the other one. On web, the pick survives reloads in that tab.
 - `EXPO_PUBLIC_AUTH_MODE=mock`: development only. The sign-in buttons issue mock tokens.
 - Real sign-in needs the `EXPO_PUBLIC_{OFFICER,CONTRACTOR}_OIDC_*` variables.
 

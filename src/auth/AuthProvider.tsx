@@ -14,6 +14,7 @@ import { configureApiAuth } from '@/api';
 import { env, isAuthBypassEnabled, isMockAuthEnabled } from '@/config/env';
 
 import { authenticateWithBiometrics, isBiometricSupported } from './biometrics';
+import { bypassRole, setBypassRole } from './bypassRole';
 import { buildSession } from './claims';
 import { refreshWithProvider, revokeWithProvider, signInWithProvider, toAuthError } from './oidc';
 import * as storage from './tokenStorage';
@@ -158,11 +159,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setBiometricEnabledState(pref);
       setBiometricSupported(supported);
 
-      // Development auth bypass: start signed in as the configured role, skipping sign-in and unlock.
-      const bypassRole = isAuthBypassEnabled() ? env.authBypassRole : undefined;
-      if (bypassRole) {
+      // Development auth bypass: start signed in as the configured role (or the one last picked on the
+      // sign-in screen), skipping sign-in and unlock.
+      const role = isAuthBypassEnabled() ? bypassRole() : undefined;
+      if (role) {
         try {
-          await applyTokens(bypassRole, mockTokens(bypassRole), true);
+          await applyTokens(role, mockTokens(role), true);
           if (cancelled) return;
           lastActiveRef.current = Date.now();
           return updateStatus('signedIn');
@@ -284,6 +286,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         lastActiveRef.current = Date.now();
         setNotice(null);
+        if (isAuthBypassEnabled()) setBypassRole(provider);
         updateStatus('signedIn');
         return null;
       } catch (error) {
@@ -295,6 +298,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     const current = storedRef.current;
+    if (isAuthBypassEnabled()) setBypassRole(null);
     await endSession(null);
     if (current && !current.mock) void revokeWithProvider(current.provider, current.refreshToken);
   }, [endSession]);
