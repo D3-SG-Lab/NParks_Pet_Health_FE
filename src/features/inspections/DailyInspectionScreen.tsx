@@ -118,7 +118,7 @@ export function DailyInspectionScreen({ animalId: focusedId }: DailyInspectionSc
       const extra = result.linkedCaseId
         ? ` Abnormal findings added to case ${result.linkedCaseId}.`
         : result.sentForReview
-          ? ' Abnormal findings sent for AI review.'
+          ? ' Abnormal findings sent to AI triage.'
           : '';
       toast.show(`${session} inspection saved for ${name}.${extra}`, 'success');
       if (focusedId) {

@@ -113,9 +113,9 @@ describe('Confirm AI routing (wireframe 12, FE-012)', () => {
     expect(mockDb.cases.find((c) => c.id === 'C-2026-0142')?.status).toBe('open');
   });
 
-  it('flags low confidence as Review required and disables Confirm until corrected', async () => {
+  it('flags low confidence as Check required and disables Confirm until corrected', async () => {
     renderScreen(<ConfirmObservationScreen observationId="obs-402" />);
-    expect(await screen.findByTestId('confirm-review-required')).toHaveTextContent(/Review required · 58% match/);
+    expect(await screen.findByTestId('confirm-review-required')).toHaveTextContent(/Check required · 58% match/);
     expect(screen.getByText('Low confidence')).toBeTruthy();
     expect(screen.getByTestId('confirm-route').props.accessibilityState.disabled).toBe(true);
     fireEvent.press(screen.getByTestId('confirm-match-correct'));

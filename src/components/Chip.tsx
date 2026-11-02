@@ -67,7 +67,7 @@ export function Chip({ label, count, variant = 'filter', selected = false, onPre
       accessibilityState={variant === 'filter' ? { checked: selected, selected } : undefined}
       aria-checked={variant === 'filter' ? selected : undefined}
       onPress={onPress}
-      hitSlop={variant === 'citation' ? theme.spacing.s2 : { top: theme.spacing.s1, bottom: theme.spacing.s1 }}
+      hitSlop={variant === 'citation' ? CITATION_SLOP : { top: theme.spacing.s1, bottom: theme.spacing.s1 }}
       style={({ pressed, focused }: { pressed: boolean; focused?: boolean }) => [
         ...style,
         pressed && (on ? styles.pressedOn : styles.pressed),
@@ -78,6 +78,10 @@ export function Chip({ label, count, variant = 'filter', selected = false, onPre
     </Pressable>
   );
 }
+
+// Citations sit inline in summary text, so they stay small and the slop makes up the 44 pt target.
+const CITATION = 24;
+const CITATION_SLOP = (theme.control.minTouch - CITATION) / 2;
 
 const styles = StyleSheet.create({
   chip: {
@@ -102,8 +106,8 @@ const styles = StyleSheet.create({
   },
   citation: {
     gap: theme.spacing.s1,
-    minWidth: 22,
-    minHeight: 22,
+    minWidth: CITATION,
+    minHeight: CITATION,
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.s1 + 2,
     borderRadius: theme.radius.sm,

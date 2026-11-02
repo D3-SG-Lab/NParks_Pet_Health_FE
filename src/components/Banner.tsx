@@ -23,7 +23,7 @@ interface BannerProps {
   message: string;
   /** Overrides the kind's icon (e.g. the wifi icon of the offline banner). */
   icon?: IconName;
-  /** Icon on a white tile (attention banners such as "3 observations need review"). */
+  /** Icon on a white tile (attention banners such as "3 observations need triage"). */
   iconTile?: boolean;
   /** Makes the whole banner a button with a trailing chevron. */
   onPress?: () => void;

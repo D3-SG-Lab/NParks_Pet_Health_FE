@@ -86,9 +86,9 @@ function Processing({ header, observation }: { header: ReactNode; observation: O
             <AppText variant="titleS">{waitingForSync ? 'Saved on this device' : observation.aiUnavailable ? 'AI unavailable' : 'Analysing observation…'}</AppText>
             <AppText variant="bodyS" tone="muted">
               {waitingForSync
-                ? "AI analysis starts once it syncs. You'll find it in the review queue or on the animal."
+                ? "AI analysis starts once it syncs. You'll find it in AI triage or on the animal."
                 : observation.aiUnavailable
-                  ? 'It waits in the review queue for an officer to route it.'
+                  ? 'It waits in AI triage for an officer to route it.'
                   : 'Usually under 15 s. Your observation is already saved.'}
             </AppText>
           </View>
@@ -189,10 +189,10 @@ function ConfirmForm({ observation, header }: ConfirmFormProps) {
     setCorrectOpen(false);
     try {
       await sendToReview.mutateAsync(observation.id);
-      toast.show('Sent to the review queue for manual triage.', 'info');
+      toast.show('Sent to AI triage for an officer to route.', 'info');
       goBack();
     } catch {
-      toast.show("Couldn't send it to the review queue. Please try again.", 'error');
+      toast.show("Couldn't send it to AI triage. Please try again.", 'error');
     }
   };
 
@@ -237,7 +237,7 @@ function ConfirmForm({ observation, header }: ConfirmFormProps) {
         {reviewRequired ? (
           <Banner
             kind="warning"
-            title={ai.match ? `Review required · ${Math.round(confidence * 100)}% match` : 'Review required · no match'}
+            title={ai.match ? `Check required · ${Math.round(confidence * 100)}% match` : 'Check required · no match'}
             message={
               ai.match
                 ? 'Check the animal and signs before routing. Confirm is disabled until corrected.'
@@ -393,7 +393,7 @@ function ConfirmForm({ observation, header }: ConfirmFormProps) {
         />
         {role === 'officer' || observation.status !== 'review' ? (
           <Button
-            label={observation.status === 'review' ? 'Leave in the review queue' : 'Send to the review queue'}
+            label={observation.status === 'review' ? 'Leave in AI triage' : 'Send to AI triage'}
             icon="file-tray-full-outline"
             variant="secondary"
             loading={sendToReview.isPending}

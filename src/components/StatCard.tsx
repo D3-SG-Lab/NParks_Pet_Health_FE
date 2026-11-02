@@ -13,6 +13,8 @@ interface StatCardProps {
   tone?: 'default' | 'attention';
   /** 0..1 — progress under the label (e.g. checks done this session). */
   progress?: number;
+  /** Spoken label when "label, value" doesn't read well (e.g. "3 of 8 checks left"). */
+  accessibilityLabel?: string;
   /** Makes the tile a button (e.g. Active pets opens the animal list). */
   onPress?: () => void;
   accessibilityHint?: string;
@@ -20,14 +22,15 @@ interface StatCardProps {
 }
 
 /** Metric tile ("42 / Active pets"). Read as one item: "Active pets, 42". Shrinks to fit 3 per row. */
-export function StatCard({ value, label, tone = 'default', progress, onPress, accessibilityHint, testID }: StatCardProps) {
+export function StatCard({ value, label, tone = 'default', progress, accessibilityLabel, onPress, accessibilityHint, testID }: StatCardProps) {
   const attention = tone === 'attention';
+  const spoken = accessibilityLabel ?? `${label}, ${value}`;
   const content = (
     <>
       <AppText
         variant="display"
         tone={attention ? 'warning' : 'default'}
-        accessibilityLabel={`${label}, ${value}`}
+        accessibilityLabel={spoken}
         accessible={!onPress}
         numberOfLines={1}
         adjustsFontSizeToFit
@@ -56,7 +59,7 @@ export function StatCard({ value, label, tone = 'default', progress, onPress, ac
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={`${label}, ${value}`}
+      accessibilityLabel={spoken}
       accessibilityHint={accessibilityHint}
       onPress={onPress}
       style={({ pressed, focused }: { pressed: boolean; focused?: boolean }) => [...style, pressed && styles.pressed, focused && focusRing]}

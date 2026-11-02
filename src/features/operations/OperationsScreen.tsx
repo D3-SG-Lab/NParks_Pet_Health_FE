@@ -36,12 +36,12 @@ import { useNow } from '@/utils/useNow';
 import { useOperationsSummary } from './hooks';
 
 const ALERT_CHIP: Record<AlertKind, { label: string; tone: StatusTone }> = {
-  review: { label: 'Review', tone: 'warning' },
+  review: { label: 'To confirm', tone: 'warning' },
   open: { label: 'Open', tone: 'info' },
   overdue: { label: 'Overdue', tone: 'danger' },
 };
 
-/** Screen 2: Operations home (FE-004, FE-005). Quick actions, today's monitoring, review banner, alerts. */
+/** Screen 2: Operations home (FE-004, FE-005). Quick actions, today's monitoring, AI triage banner, alerts. */
 export function OperationsScreen() {
   const router = useRouter();
   const { session, role } = useSession();
@@ -142,7 +142,8 @@ export function OperationsScreen() {
               <StatCard
                 testID="stat-checks-due"
                 value={data.checksDue}
-                label={`Checks due · ${data.session}`}
+                label={`of ${data.activePets} left · ${data.session} checks`}
+                accessibilityLabel={`${data.session} checks: ${data.checksDue} of ${data.activePets} left`}
                 progress={data.activePets ? (data.activePets - data.checksDue) / data.activePets : 0}
                 accessibilityHint="Opens daily inspection"
                 onPress={() => router.navigate('/daily-inspection')}
@@ -166,7 +167,7 @@ export function OperationsScreen() {
               icon="sparkles-outline"
               title={reviewText(data.observationsNeedingReview)}
               message="AI unmatched or low confidence"
-              accessibilityHint="Opens the review queue"
+              accessibilityHint="Opens AI triage"
               onPress={() => router.push('/review-queue')}
             />
           ) : null}
@@ -176,7 +177,7 @@ export function OperationsScreen() {
               Alerts
             </SectionLabel>
             {data.alerts.length === 0 ? (
-              <EmptyState testID="operations-no-alerts" icon="checkmark-done-outline" title="No alerts right now" message="Reviews, follow-ups and reopened cases will appear here." />
+              <EmptyState testID="operations-no-alerts" icon="checkmark-done-outline" title="No alerts right now" message="AI results to confirm, follow-ups and reopened cases will appear here." />
             ) : (
               <Card padded={false}>
                 {data.alerts.map((alert, index) => {
@@ -220,7 +221,7 @@ export function OperationsScreen() {
 }
 
 function reviewText(count: number): string {
-  return `${count} ${count === 1 ? 'observation needs' : 'observations need'} review`;
+  return `${count} ${count === 1 ? 'observation needs' : 'observations need'} triage`;
 }
 
 const styles = StyleSheet.create({

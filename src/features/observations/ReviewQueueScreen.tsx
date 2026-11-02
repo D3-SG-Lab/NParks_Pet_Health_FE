@@ -46,7 +46,7 @@ const ACTION_SHORT: Record<RoutingAction, string> = {
 /** Grid order from the wireframe (2 × 2). */
 const GRID: readonly RoutingAction[] = ['timeline-only', 'new-case', 'update-case', 'reopen-case'];
 
-/** Screen 4: Review queue (FE-017). Officers triage unmatched, low-confidence and AI-unavailable observations. */
+/** Screen 4: Review queue, shown as "AI triage" (FE-017). Officers triage unmatched, low-confidence and AI-unavailable observations. */
 export function ReviewQueueScreen() {
   const { role } = useSession();
   const goBack = useGoBack('/');
@@ -63,7 +63,7 @@ export function ReviewQueueScreen() {
     <PageLayout
       header={
         <ScreenHeader
-          title="Review queue"
+          title="AI triage"
           onBack={goBack}
           trailing={queue.data ? <StatusChip label={`${count} to triage`} tone="warning" dot={false} testID="review-count" /> : null}
         />
@@ -73,7 +73,7 @@ export function ReviewQueueScreen() {
         Observations the AI could not match to an animal, or scored below the confidence threshold. Pick the animal and case action manually.
       </AppText>
       {queue.isPending ? (
-        <SkeletonList label="Loading the review queue" rows={3} />
+        <SkeletonList label="Loading AI triage" rows={3} />
       ) : queue.isError ? (
         <ErrorView message="Check your connection and try again." onRetry={() => void queue.refetch()} />
       ) : count === 0 ? (
@@ -225,7 +225,7 @@ function QueueCard({ item, expanded, onExpand }: QueueCardProps) {
         <AppText variant="bodyS" tone="ai">{`AI guess: ${guess.kennel} ${guess.name} (${Math.round((ai?.match?.confidence ?? 0) * 100)}%)`}</AppText>
       ) : null}
 
-      <FormField label="Case action" required>
+      <FormField label="Case action" required aside={picked ? undefined : 'Pick an animal first'}>
         <View accessibilityRole="radiogroup" accessibilityLabel="Case action" style={styles.grid}>
           {GRID.map((value) => {
             const choice = choices.find((c) => c.action === value);
