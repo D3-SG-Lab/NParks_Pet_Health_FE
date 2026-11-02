@@ -181,7 +181,9 @@ const styles = StyleSheet.create({
   list: { backgroundColor: theme.colors.background },
   listContent: { paddingBottom: theme.spacing.s8, width: '100%', maxWidth: theme.control.contentMaxWidthWide, alignSelf: 'center', flexGrow: 1 },
 });
-/** Case meta with the case number in mono and "unassigned" called out (screen 13). */
+/** Case meta with the case number in mono, and "unassigned" and an overdue follow-up called out (screen 13). */
+const CALLOUT_TONE: Record<string, 'warning' | 'danger'> = { unassigned: 'warning', 'follow-up overdue': 'danger' };
+
 function CaseMetaLine({ meta }: { meta: string }) {
   const [id, ...rest] = meta.split(' · ');
   return (
@@ -190,7 +192,7 @@ function CaseMetaLine({ meta }: { meta: string }) {
         {id}
       </AppText>
       {rest.map((part, index) => (
-        <AppText key={index} variant="bodyS" tone={part === 'unassigned' ? 'warning' : 'muted'} bold={part === 'unassigned'}>
+        <AppText key={index} variant="bodyS" tone={CALLOUT_TONE[part] ?? 'muted'} bold={part in CALLOUT_TONE}>
           {` · ${part}`}
         </AppText>
       ))}

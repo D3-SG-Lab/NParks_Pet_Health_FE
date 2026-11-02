@@ -222,7 +222,7 @@ function seedAlerts(now: number): OperationsAlert[] {
       animalId: 'animal-2',
       caseId: 'C-2026-0142',
       kind: 'review',
-      message: 'GI observation requires review',
+      message: 'GI observation waiting for confirmation',
       at: now - 10 * 60_000,
     },
     {

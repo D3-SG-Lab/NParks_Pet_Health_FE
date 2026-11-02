@@ -14,7 +14,7 @@
         "animalId": "animal-2",
         "caseId": "C-2026-0142",
         "kind": "review",
-        "message": "GI observation requires review",
+        "message": "GI observation waiting for confirmation",
         "at": 1792981200000,
         "animalName": "Yang Yang",
         "kennel": "KC2-2"

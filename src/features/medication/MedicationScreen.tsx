@@ -28,7 +28,7 @@ import { SelectedAnimalBar } from '@/features/animals/SelectedAnimalBar';
 import { OfflineBanner } from '@/features/sync/OfflineBanner';
 import { useGoBack } from '@/navigation/useGoBack';
 import { theme } from '@/theme';
-import { formatTime, isoToDdMm } from '@/utils/dates';
+import { formatTime, isoToDdMm, msAt } from '@/utils/dates';
 import { useNow } from '@/utils/useNow';
 
 import { useMedicationAnimals, useMedicationDay, useRecordAdministration } from './hooks';
@@ -171,11 +171,13 @@ function DoseList({ slots, animalName }: { slots: DoseSlot[]; animalName: string
       ) : (
         dueNow.map((slot) => {
           const overdue = slot.status === 'overdue';
+          // Past its time but still inside the dose window: amber, so it stands out before it turns overdue.
+          const late = !overdue && now > msAt(slot.slot.slice(0, 10), slot.time);
           return (
             <Card key={slot.slot} outline={overdue ? 'danger' : 'primary'} testID={`dose-${slot.slot}`}>
               <View style={styles.row}>
                 <AppText variant="titleS" style={styles.flex}>{`${slot.item} · ${slot.dose}`}</AppText>
-                <StatusChip label={overdue ? 'Overdue' : `Due ${slot.time}`} tone={overdue ? 'danger' : 'info'} dot={overdue} />
+                <StatusChip label={overdue ? 'Overdue' : `Due ${slot.time}`} tone={overdue ? 'danger' : late ? 'warning' : 'info'} dot={overdue || late} />
               </View>
               <AppText variant="bodyS" tone="muted">
                 {doseMeta(slot, slots)}

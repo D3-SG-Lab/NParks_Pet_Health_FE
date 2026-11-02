@@ -73,11 +73,11 @@ describe('Operations (wireframe 01)', () => {
     const session = sessionFor();
     const due = mockDb.animals.filter((a) => (session === 'AM' ? a.today.amInspection : a.today.pmInspection) === 'due').length;
     expect(await screen.findByTestId('stat-active-pets')).toHaveTextContent(/^8/);
-    expect(screen.getByTestId('stat-checks-due')).toHaveTextContent(new RegExp(`^${due}Checks due · ${session}`));
+    expect(screen.getByTestId('stat-checks-due')).toHaveTextContent(new RegExp(`^${due}of \\d+ left · ${session} checks`));
     expect(screen.getByTestId('stat-open-cases')).toHaveTextContent(/^3/);
-    expect(screen.getByText('4 observations need review')).toBeTruthy();
+    expect(screen.getByText('4 observations need triage')).toBeTruthy();
     expect(screen.getByLabelText(/^KC2-2 Yang Yang\. GI observation/)).toBeTruthy();
-    expect(screen.getByText('GI observation requires review')).toBeTruthy();
+    expect(screen.getByText('GI observation waiting for confirmation')).toBeTruthy();
     expect(screen.getByText('10 min ago')).toBeTruthy();
     expect(screen.getByText(/· (AM|PM) session$/)).toBeTruthy();
   });
@@ -90,7 +90,7 @@ describe('Operations (wireframe 01)', () => {
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/case/[id]', params: { id: 'C-2026-0142' } });
   });
 
-  it('opens New Health Observation and, for officers, the review queue', async () => {
+  it('opens New Health Observation and, for officers, AI triage', async () => {
     renderWithProviders(<OperationsScreen />);
     fireEvent.press(screen.getByTestId('operations-new-observation'));
     expect(mockRouter.push).toHaveBeenCalledWith('/new-observation');
