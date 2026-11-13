@@ -15,6 +15,8 @@ export interface ProviderEnv {
 
 export interface AppEnv {
   apiUrl: string | undefined;
+  /** Load the demo animals and records. Only matters with the API on; on by default. */
+  demoData: boolean;
   authMode: AuthMode;
   /** Development auth bypass role, if set. Read it through isAuthBypassEnabled(). */
   authBypassRole: UserRole | undefined;
@@ -42,6 +44,11 @@ export function parseAuthMode(raw: string | undefined): AuthMode {
   return clean(raw)?.toLowerCase() === 'mock' ? 'mock' : 'oidc';
 }
 
+/** Anything but "false", "0" or "off" keeps the demo data on. */
+export function parseDemoData(raw: string | undefined): boolean {
+  return !['false', '0', 'off', 'no'].includes(clean(raw)?.toLowerCase() ?? '');
+}
+
 /** "officer" or "contractor" turns the development auth bypass on as that role; anything else leaves it off. */
 export function parseAuthBypass(raw: string | undefined): UserRole | undefined {
   const value = clean(raw)?.toLowerCase();
@@ -52,6 +59,7 @@ const authBypassRole = parseAuthBypass(process.env.EXPO_PUBLIC_AUTH_BYPASS);
 
 export const env: AppEnv = {
   apiUrl: clean(process.env.EXPO_PUBLIC_API_URL),
+  demoData: parseDemoData(process.env.EXPO_PUBLIC_DEMO_DATA),
   // The bypass signs in with mock tokens, so it implies mock mode.
   authMode: authBypassRole ? 'mock' : parseAuthMode(process.env.EXPO_PUBLIC_AUTH_MODE),
   authBypassRole,

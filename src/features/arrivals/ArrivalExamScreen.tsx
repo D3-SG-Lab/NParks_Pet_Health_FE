@@ -3,6 +3,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { ApiError } from '@/api';
 import { queryKeys } from '@/api/queryKeys';
 import { useSession } from '@/auth';
 import {
@@ -188,7 +189,7 @@ function ExamForm({ details, initial }: ExamFormProps) {
       {chipConflict ? (
         <Banner kind="error" title="Microchip already registered" message={submitError.message} testID="exam-chip-conflict" />
       ) : submitError ? (
-        <Banner kind="error" title="Couldn't complete the exam" message="Your entries are kept. Please try again." testID="exam-submit-error" />
+        <Banner kind="error" title="Couldn't complete the exam" message={submitMessage(submitError)} testID="exam-submit-error" />
       ) : null}
       {chipConflict ? (
         <Button label="Edit arrival details" variant="secondary" testID="exam-edit-details" onPress={() => router.navigate('/new-arrival')} />
@@ -268,3 +269,9 @@ const styles = StyleSheet.create({
   vet: { flexGrow: 2, flexBasis: 180 },
   weight: { flexGrow: 1, flexBasis: 110 },
 });
+
+/** The server's reason for a rejected request or kennel change; otherwise a retry prompt. */
+function submitMessage(error: Error): string {
+  const rejected = (error instanceof ApiError && error.status >= 400 && error.status < 500) || error instanceof ArrivalError;
+  return rejected ? `${error.message} Your entries are kept.` : 'Your entries are kept. Please try again.';
+}

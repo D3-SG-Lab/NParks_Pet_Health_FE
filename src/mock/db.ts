@@ -2,7 +2,13 @@
  * In-memory mock store. Lives only for the current app session and is NOT a backend: nothing here
  * is sent anywhere or persisted. Feature API layers (src/features/<name>/*Api.ts) are the only
  * modules that import it, so swapping in generated API calls later does not touch any screen.
+ *
+ * With the backend on, backend records are merged in here too (src/features/animals/animalSource.ts and
+ * the features' *Backend.ts modules). EXPO_PUBLIC_DEMO_DATA=false then starts the store without the demo
+ * animals and their records, so only backend data shows.
  */
+import { isApiEnabled } from '@/api';
+import { env } from '@/config/env';
 import type {
   Animal,
   ArrivalDraft,
@@ -30,6 +36,7 @@ import {
   SEED_STAFF,
   SEED_VETS,
   createSeedRecords,
+  type SeedRecords,
 } from './seed';
 
 /** Device-side outbox entry: the sync item plus the mock upload schedule. */
@@ -60,13 +67,18 @@ interface MockState {
   nextId: number;
 }
 
+function noRecords(): SeedRecords {
+  return { alerts: [], exams: [], inspections: [], observations: [], cases: [], schedules: [], administrations: [] };
+}
+
 function initialState(): MockState {
-  const records = createSeedRecords();
+  const demo = !isApiEnabled() || env.demoData;
+  const records = demo ? createSeedRecords() : noRecords();
   return {
-    animals: SEED_ANIMALS.map((animal) => ({ ...animal, today: { ...animal.today } })),
+    animals: demo ? SEED_ANIMALS.map((animal) => ({ ...animal, today: { ...animal.today } })) : [],
     ...records,
     staff: SEED_STAFF.map((member) => ({ ...member })),
-    recentAnimalIds: ['animal-2', 'animal-4'],
+    recentAnimalIds: demo ? ['animal-2', 'animal-4'] : [],
     draft: null,
     online: true,
     outbox: [],

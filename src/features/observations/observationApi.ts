@@ -1,11 +1,14 @@
 /**
  * Ad-hoc observations, AI confirmation and the review queue.
  *
- * MOCK: the observation is saved to the in-memory store and analysed by the rule-based mock AI
- * (src/mock/ai.ts). OUTSTANDING endpoints: create observation + AI status (BE-012), AI result
- * (AI-006), confirm routing (BE-018), review queue list and triage (BE-019), and media upload via
- * SAS URLs (BE-013 / FE-011).
+ * With EXPO_PUBLIC_API_URL set, an observation that is unlinked or about a backend animal is saved with
+ * POST /observations, and one opened by id is loaded with GET /observations/{id} (observationBackend.ts).
+ * Observations about demo animals stay on the in-memory demo store.
+ * Still MOCK for every observation: the AI result (AI-006), confirm routing (BE-018) and the review queue
+ * (BE-019), which have no endpoints yet; the rule-based mock AI (src/mock/ai.ts) runs on the device.
+ * Media upload (POST /media/presign) needs a real camera/picker, which the app does not have yet.
  */
+import { isApiEnabled } from '@/api';
 import type {
   Actor,
   Animal,
@@ -15,13 +18,17 @@ import type {
   Observation,
   RoutingAction,
 } from '@/domain/types';
+import { syncAnimals } from '@/features/animals/animalSource';
 import { AI_PROCESSING_MS } from '@/mock/ai';
 import { applyRouting } from '@/mock/caseRules';
 import { mockDb, mockSigns, newMockId } from '@/mock/db';
 import { overTheWire, simulateLatency } from '@/mock/latency';
 import { resolvePendingAnalyses } from '@/mock/processing';
 import { isOnline, queueIfOffline } from '@/mock/sync';
+import { isBackendId } from '@/mock/scope';
 import { formatTime } from '@/utils/dates';
+
+import * as backend from './observationBackend';
 
 /** Review threshold and confidence wording. Later these come with the AI result from the backend. */
 export { CONFIDENCE_THRESHOLD, confidenceLabel, needsReview } from '@/mock/ai';
@@ -56,8 +63,19 @@ export interface SubmitObservationInput {
  */
 export async function submitObservation({ animalId, text, media, actor, now = Date.now() }: SubmitObservationInput): Promise<Observation> {
   await simulateLatency();
+  // The AI matches the text against the current animals.
+  await syncAnimals();
   const trimmed = text.trim();
   if (!trimmed && media.length === 0) throw new ObservationError('empty', 'Describe what you saw.');
+  // Unlinked text, or a backend animal: the backend stores it. Demo animals and "Work offline (demo)" stay local.
+  if (isApiEnabled() && isOnline() && (animalId === null || isBackendId(animalId))) {
+    const saved = await backend.submitObservation(animalId, trimmed, actor);
+    // Photos and videos are placeholders until the media upload is real; keep them on the device copy.
+    const observation: Observation = { ...saved, media, readyAt: saved.aiUnavailable ? null : now + AI_PROCESSING_MS };
+    mockDb.observations.push(observation);
+    resolvePendingAnalyses(now);
+    return observation;
+  }
   const observation: Observation = {
     id: newMockId('obs'),
     animalId,
@@ -105,6 +123,7 @@ export interface ObservationDetail {
 
 export async function getObservation(id: string): Promise<ObservationDetail | null> {
   await simulateLatency();
+  if (isApiEnabled() && isBackendId(id)) await backend.getObservation(id);
   resolvePendingAnalyses();
   const observation = mockDb.observations.find((o) => o.id === id);
   if (!observation) return null;
@@ -209,6 +228,7 @@ const REASON_ORDER: Record<ReviewReason, number> = { 'no-match': 0, 'low-confide
  */
 export async function listReviewQueue(): Promise<ReviewQueueItem[]> {
   await simulateLatency();
+  await syncAnimals();
   resolvePendingAnalyses();
   const animals = new Map(mockDb.animals.map((a) => [a.id, a]));
   return overTheWire(mockDb.observations

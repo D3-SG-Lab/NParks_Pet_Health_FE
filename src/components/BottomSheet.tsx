@@ -19,6 +19,8 @@ interface BottomSheetProps {
   footer?: ReactNode;
   /** Scroll the content when it can be taller than the sheet (don't use with a FlatList child). */
   scroll?: boolean;
+  /** The content is its own scrolling list (FlatList): it gets the sheet's remaining height and scrolls. */
+  list?: boolean;
   testID?: string;
 }
 
@@ -27,7 +29,7 @@ interface BottomSheetProps {
  * dimmed backdrop, the footer's Cancel, the close button (sheets without a footer), the system back gesture
  * (Android), the VoiceOver escape gesture or Escape (web) closes it. Width-limited on tablets/web.
  */
-export function BottomSheet({ visible, title, icon, onClose, children, footer, scroll = false, testID }: BottomSheetProps) {
+export function BottomSheet({ visible, title, icon, onClose, children, footer, scroll = false, list = false, testID }: BottomSheetProps) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   return (
@@ -72,7 +74,7 @@ export function BottomSheet({ visible, title, icon, onClose, children, footer, s
               {children}
             </ScrollView>
           ) : (
-            <View style={styles.content}>{children}</View>
+            <View style={[styles.content, list && styles.listContent]}>{children}</View>
           )}
           {footer ? <View style={styles.footer}>{footer}</View> : null}
         </View>
@@ -121,6 +123,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface2,
   },
   scroll: { flexGrow: 0 },
+  // Without a bounded height a FlatList grows past the sheet's maxHeight and is clipped instead of scrolling.
+  listContent: { flexShrink: 1, minHeight: 0 },
   content: { gap: theme.spacing.s3, paddingBottom: theme.spacing.s1 },
   footer: { flexDirection: 'row', gap: theme.spacing.s3 },
 });

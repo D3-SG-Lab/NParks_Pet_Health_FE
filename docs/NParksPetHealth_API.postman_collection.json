@@ -1,0 +1,1934 @@
+{
+  "info": {
+    "_postman_id": "nparks-pethealth-api-v1",
+    "name": "NParksPetHealth API",
+    "description": "Postman collection for NParksPetHealth API v1. Set the `baseUrl` variable to your server host (e.g. https://localhost:7001).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints using OIDC (SingPass / CorpPass).",
+      "item": [
+        {
+          "name": "Get Authorization URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/authorize?provider=singpass&redirectUri=https://yourapp.example.com/callback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "authorize"],
+              "query": [
+                {
+                  "key": "provider",
+                  "value": "singpass",
+                  "description": "Identity provider: 'singpass' or 'corppass'"
+                },
+                {
+                  "key": "redirectUri",
+                  "value": "https://yourapp.example.com/callback",
+                  "description": "Redirect URI registered with the IDP"
+                }
+              ]
+            },
+            "description": "Returns the IDP authorization URL. The client redirects the user to this URL to initiate the login flow."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"authorizationUrl\": \"https://idp.example.com/oauth/authorize?...\",\n  \"state\": \"random-csrf-state-value\"\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"provider is required.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Callback (Exchange Code for Tokens)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"singpass\",\n  \"code\": \"<authorization-code-from-idp>\",\n  \"state\": \"<state-returned-from-authorize>\",\n  \"redirectUri\": \"https://yourapp.example.com/callback\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/callback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "callback"]
+            },
+            "description": "Exchanges an authorization code returned by the IDP for access and refresh tokens."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"access_token\": \"<jwt-access-token>\",\n  \"refresh_token\": \"<opaque-refresh-token>\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"<validation message>\"\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Token validation failed.\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"User not found.\"\n}"
+            },
+            {
+              "name": "502 Bad Gateway",
+              "status": "Bad Gateway",
+              "code": 502,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"IDP communication error.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            },
+            "description": "Exchanges a valid refresh token for a new access token."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"access_token\": \"<new-jwt-access-token>\",\n  \"refresh_token\": \"<new-opaque-refresh-token>\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Refresh token is invalid or expired.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "logout"]
+            },
+            "description": "Revokes a refresh token (logout from the current device)."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "status": "No Content",
+              "code": 204,
+              "header": [],
+              "body": ""
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"refresh_token is required.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Dev Token (Development Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"userType\": \"aqc_staff\",\n  \"aqcStaffRole\": \"officer\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/dev-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "dev-token"]
+            },
+            "description": "[DEVELOPMENT ONLY] Issues a signed JWT directly from the supplied claims, bypassing the OIDC flow. userType: pet_owner | veterinarian | nparks_admin | aqc_staff. aqcStaffRole (for aqc_staff): officer | supervisor | vet | contractor. Returns 404 in non-Development environments."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"access_token\": \"<jwt-access-token>\",\n  \"refresh_token\": \"<opaque-refresh-token>\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"userType is invalid.\"\n}"
+            },
+            {
+              "name": "404 Not Found (non-dev environment)",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Not found.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Admin management endpoints. Requires NParksAdmin authorization.",
+      "item": [
+        {
+          "name": "NParks Admins",
+          "item": [
+            {
+              "name": "Create NParks Admin",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fullName\": \"John Doe\",\n  \"workEmail\": \"john.doe@nparks.gov.sg\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/nparks-admins",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "admin", "nparks-admins"]
+                },
+                "description": "Creates a new NParks admin account. Account status defaults to inactive."
+              },
+              "response": [
+                {
+                  "name": "201 Created",
+                  "status": "Created",
+                  "code": 201,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"id\": 1,\n  \"fullName\": \"John Doe\",\n  \"workEmail\": \"john.doe@nparks.gov.sg\",\n  \"accountStatus\": \"inactive\",\n  \"lastLoginAt\": null,\n  \"createdAt\": \"2024-01-01T00:00:00Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00Z\"\n}"
+                },
+                {
+                  "name": "409 Conflict",
+                  "status": "Conflict",
+                  "code": 409,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"An admin with this email already exists.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "List NParks Admins",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/nparks-admins?status=active",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "admin", "nparks-admins"],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active",
+                      "description": "Filter by account status: 'active', 'inactive', 'suspended'. Omit for all.",
+                      "disabled": false
+                    }
+                  ]
+                },
+                "description": "Lists all NParks admin accounts (non-deleted). Optionally filter by status."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "[\n  {\n    \"id\": 1,\n    \"fullName\": \"John Doe\",\n    \"workEmail\": \"john.doe@nparks.gov.sg\",\n    \"accountStatus\": \"active\",\n    \"lastLoginAt\": \"2024-01-15T08:30:00Z\",\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-15T08:30:00Z\"\n  }\n]"
+                }
+              ]
+            },
+            {
+              "name": "Get NParks Admin by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/nparks-admins/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "admin", "nparks-admins", "1"]
+                },
+                "description": "Returns a single NParks admin by ID."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"id\": 1,\n  \"fullName\": \"John Doe\",\n  \"workEmail\": \"john.doe@nparks.gov.sg\",\n  \"accountStatus\": \"active\",\n  \"lastLoginAt\": \"2024-01-15T08:30:00Z\",\n  \"createdAt\": \"2024-01-01T00:00:00Z\",\n  \"updatedAt\": \"2024-01-15T08:30:00Z\"\n}"
+                },
+                {
+                  "name": "404 Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"NParks admin not found.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update NParks Admin Status",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"active\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/nparks-admins/1/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "admin", "nparks-admins", "1", "status"]
+                },
+                "description": "Updates the account status of a NParks admin. Accepted values: 'active', 'inactive', 'suspended'."
+              },
+              "response": [
+                {
+                  "name": "204 No Content",
+                  "status": "No Content",
+                  "code": 204,
+                  "header": [],
+                  "body": ""
+                },
+                {
+                  "name": "400 Bad Request",
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Invalid status value.\"\n}"
+                },
+                {
+                  "name": "404 Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"NParks admin not found.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Delete NParks Admin",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/nparks-admins/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "admin", "nparks-admins", "1"]
+                },
+                "description": "Soft-deletes a NParks admin account."
+              },
+              "response": [
+                {
+                  "name": "204 No Content",
+                  "status": "No Content",
+                  "code": 204,
+                  "header": [],
+                  "body": ""
+                },
+                {
+                  "name": "404 Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"NParks admin not found.\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Veterinarians",
+          "item": [
+            {
+              "name": "List Veterinarians",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/veterinarians?status=active",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "admin", "veterinarians"],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active",
+                      "description": "Filter by account status: 'active', 'inactive', 'suspended'. Omit for all.",
+                      "disabled": false
+                    }
+                  ]
+                },
+                "description": "Lists all veterinarians (non-deleted). Optionally filter by account status."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "[\n  {\n    \"id\": 1,\n    \"clinicId\": 10,\n    \"fullName\": \"Dr. Jane Smith\",\n    \"licenceNumber\": \"VET-2024-001\",\n    \"specialisation\": \"Surgery\",\n    \"email\": \"jane.smith@vetclinic.com\",\n    \"accountStatus\": \"active\",\n    \"lastLoginAt\": \"2024-01-15T08:30:00Z\",\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-15T08:30:00Z\"\n  }\n]"
+                }
+              ]
+            },
+            {
+              "name": "Update Veterinarian Status",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"active\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/veterinarians/1/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "admin", "veterinarians", "1", "status"]
+                },
+                "description": "Updates the account status of a veterinarian. Accepted values: 'active', 'inactive', 'suspended'."
+              },
+              "response": [
+                {
+                  "name": "204 No Content",
+                  "status": "No Content",
+                  "code": 204,
+                  "header": [],
+                  "body": ""
+                },
+                {
+                  "name": "400 Bad Request",
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Invalid status value.\"\n}"
+                },
+                {
+                  "name": "404 Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Veterinarian not found.\"\n}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Master Data",
+      "description": "Master data management endpoints. Read operations require any authenticated user. Write/update operations require NParksAdmin.",
+      "item": [
+        {
+          "name": "Pet Species",
+          "item": [
+            {
+              "name": "Create Pet Species",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Dog\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/species",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "species"]
+                },
+                "description": "Creates a new pet species. Requires NParksAdmin role."
+              },
+              "response": [
+                {
+                  "name": "201 Created",
+                  "status": "Created",
+                  "code": 201,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"id\": 1,\n  \"name\": \"Dog\",\n  \"isActive\": true,\n  \"createdAt\": \"2024-01-01T00:00:00Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00Z\"\n}"
+                },
+                {
+                  "name": "409 Conflict",
+                  "status": "Conflict",
+                  "code": 409,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"A species with this name already exists.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "List Pet Species",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/species?isActive=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "species"],
+                  "query": [
+                    {
+                      "key": "isActive",
+                      "value": "true",
+                      "description": "Filter by active status. Omit to return all.",
+                      "disabled": false
+                    }
+                  ]
+                },
+                "description": "Lists pet species. Optionally filter by isActive."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Dog\",\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  {\n    \"id\": 2,\n    \"name\": \"Cat\",\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  }\n]"
+                }
+              ]
+            },
+            {
+              "name": "Update Pet Species Status",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/species/1/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "species", "1", "status"]
+                },
+                "description": "Updates the active status of a pet species. Requires NParksAdmin role."
+              },
+              "response": [
+                {
+                  "name": "204 No Content",
+                  "status": "No Content",
+                  "code": 204,
+                  "header": [],
+                  "body": ""
+                },
+                {
+                  "name": "404 Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Species not found.\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Pet Breeds",
+          "item": [
+            {
+              "name": "Create Pet Breed",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"speciesId\": 1,\n  \"name\": \"Golden Retriever\",\n  \"isHdbApproved\": false\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/breeds",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "breeds"]
+                },
+                "description": "Creates a new pet breed. Requires NParksAdmin role."
+              },
+              "response": [
+                {
+                  "name": "201 Created",
+                  "status": "Created",
+                  "code": 201,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"id\": 1,\n  \"speciesId\": 1,\n  \"speciesName\": \"Dog\",\n  \"name\": \"Golden Retriever\",\n  \"isHdbApproved\": false,\n  \"isActive\": true,\n  \"createdAt\": \"2024-01-01T00:00:00Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00Z\"\n}"
+                },
+                {
+                  "name": "400 Bad Request — species not found",
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Species not found.\"\n}"
+                },
+                {
+                  "name": "409 Conflict",
+                  "status": "Conflict",
+                  "code": 409,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"A breed with this name already exists for the given species.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "List Pet Breeds",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/breeds?speciesId=1&isHdbApproved=true&isActive=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "breeds"],
+                  "query": [
+                    {
+                      "key": "speciesId",
+                      "value": "1",
+                      "description": "Filter by species ID.",
+                      "disabled": false
+                    },
+                    {
+                      "key": "isHdbApproved",
+                      "value": "true",
+                      "description": "Filter by HDB approval status.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "isActive",
+                      "value": "true",
+                      "description": "Filter by active status. Omit to return all.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Lists pet breeds. Optionally filter by speciesId, isHdbApproved, isActive."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "[\n  {\n    \"id\": 1,\n    \"speciesId\": 1,\n    \"speciesName\": \"Dog\",\n    \"name\": \"Golden Retriever\",\n    \"isHdbApproved\": false,\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  }\n]"
+                }
+              ]
+            },
+            {
+              "name": "Update Pet Breed Status",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/breeds/1/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "breeds", "1", "status"]
+                },
+                "description": "Updates the active status of a pet breed. Requires NParksAdmin role."
+              },
+              "response": [
+                {
+                  "name": "204 No Content",
+                  "status": "No Content",
+                  "code": 204,
+                  "header": [],
+                  "body": ""
+                },
+                {
+                  "name": "404 Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Breed not found.\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Vaccine Types",
+          "item": [
+            {
+              "name": "Create Vaccine Type",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Rabies\",\n  \"description\": \"Core vaccine required for all dogs and cats.\",\n  \"applicableSpeciesId\": null,\n  \"recommendedIntervalDays\": 365\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/vaccine-types",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "vaccine-types"]
+                },
+                "description": "Creates a new vaccine type. Requires NParksAdmin role. applicableSpeciesId null means universal (all species)."
+              },
+              "response": [
+                {
+                  "name": "201 Created",
+                  "status": "Created",
+                  "code": 201,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"id\": 1,\n  \"name\": \"Rabies\",\n  \"description\": \"Core vaccine required for all dogs and cats.\",\n  \"applicableSpeciesId\": null,\n  \"applicableSpeciesName\": null,\n  \"recommendedIntervalDays\": 365,\n  \"isActive\": true,\n  \"createdAt\": \"2024-01-01T00:00:00Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00Z\"\n}"
+                },
+                {
+                  "name": "400 Bad Request — species not found",
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Species not found.\"\n}"
+                },
+                {
+                  "name": "409 Conflict",
+                  "status": "Conflict",
+                  "code": 409,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"A vaccine type with this name already exists.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "List Vaccine Types",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/vaccine-types?speciesId=1&isActive=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "vaccine-types"],
+                  "query": [
+                    {
+                      "key": "speciesId",
+                      "value": "1",
+                      "description": "Filter by applicable species ID. Returns matching + universal (null applicableSpeciesId).",
+                      "disabled": true
+                    },
+                    {
+                      "key": "isActive",
+                      "value": "true",
+                      "description": "Filter by active status. Omit to return all.",
+                      "disabled": false
+                    }
+                  ]
+                },
+                "description": "Lists vaccine types. When speciesId is provided, returns vaccine types for that species plus universal ones."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Rabies\",\n    \"description\": \"Core vaccine required for all dogs and cats.\",\n    \"applicableSpeciesId\": null,\n    \"applicableSpeciesName\": null,\n    \"recommendedIntervalDays\": 365,\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  }\n]"
+                }
+              ]
+            },
+            {
+              "name": "Update Vaccine Type Status",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/vaccine-types/1/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "vaccine-types", "1", "status"]
+                },
+                "description": "Updates the active status of a vaccine type. Requires NParksAdmin role."
+              },
+              "response": [
+                {
+                  "name": "204 No Content",
+                  "status": "No Content",
+                  "code": 204,
+                  "header": [],
+                  "body": ""
+                },
+                {
+                  "name": "404 Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Vaccine type not found.\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Vet Specialisations",
+          "item": [
+            {
+              "name": "Create Vet Specialisation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Surgery\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/vet-specialisations",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "vet-specialisations"]
+                },
+                "description": "Creates a new vet specialisation. Requires NParksAdmin role."
+              },
+              "response": [
+                {
+                  "name": "201 Created",
+                  "status": "Created",
+                  "code": 201,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"id\": 1,\n  \"name\": \"Surgery\",\n  \"isActive\": true,\n  \"createdAt\": \"2024-01-01T00:00:00Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00Z\"\n}"
+                },
+                {
+                  "name": "409 Conflict",
+                  "status": "Conflict",
+                  "code": 409,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"A vet specialisation with this name already exists.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "List Vet Specialisations",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/vet-specialisations?isActive=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "vet-specialisations"],
+                  "query": [
+                    {
+                      "key": "isActive",
+                      "value": "true",
+                      "description": "Filter by active status. Omit to return all.",
+                      "disabled": false
+                    }
+                  ]
+                },
+                "description": "Lists vet specialisations. Optionally filter by isActive."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Surgery\",\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  }\n]"
+                }
+              ]
+            },
+            {
+              "name": "Update Vet Specialisation Status",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/master-data/vet-specialisations/1/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "master-data", "vet-specialisations", "1", "status"]
+                },
+                "description": "Updates the active status of a vet specialisation. Requires NParksAdmin role."
+              },
+              "response": [
+                {
+                  "name": "204 No Content",
+                  "status": "No Content",
+                  "code": 204,
+                  "header": [],
+                  "body": ""
+                },
+                {
+                  "name": "404 Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Vet specialisation not found.\"\n}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Animal Stay (AQC)",
+      "description": "Animal quarantine centre stay management. Requires AqcStaff authorization.",
+      "item": [
+        {
+          "name": "Animal Stays",
+          "item": [
+            {
+              "name": "Create Animal Stay",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Buddy\",\n  \"kennelId\": 1,\n  \"species\": \"Dog\",\n  \"sex\": \"Male\",\n  \"countryCode\": \"SG\",\n  \"microchip\": \"900082000123456\",\n  \"dateOfBirth\": \"2020-05-15\",\n  \"arrivalDate\": \"2024-01-10\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/animals",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "animals"]
+                },
+                "description": "Creates a new animal stay (registers an animal arrival). species: 'Dog' | 'Cat' | 'Other'. sex: 'Male' | 'Female' | 'Unknown' (defaults to Unknown if null). countryCode: ISO 3166-1 alpha-2."
+              },
+              "response": [
+                {
+                  "name": "201 Created",
+                  "status": "Created",
+                  "code": 201,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"id\": 1,\n  \"name\": \"Buddy\",\n  \"kennelId\": 1,\n  \"kennelCode\": \"K-01\",\n  \"kennelBlock\": \"Block A\",\n  \"species\": \"Dog\",\n  \"sex\": \"Male\",\n  \"countryCode\": \"SG\",\n  \"countryName\": \"Singapore\",\n  \"microchip\": \"900082000123456\",\n  \"dateOfBirth\": \"2020-05-15\",\n  \"arrivalDate\": \"2024-01-10\",\n  \"releaseDate\": null,\n  \"status\": \"staying\",\n  \"createdBy\": 5,\n  \"createdAt\": \"2024-01-10T08:00:00Z\",\n  \"updatedAt\": \"2024-01-10T08:00:00Z\"\n}"
+                },
+                {
+                  "name": "400 Bad Request",
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"<validation message>\"\n}"
+                },
+                {
+                  "name": "409 Conflict",
+                  "status": "Conflict",
+                  "code": 409,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"An active stay already exists for this microchip.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Animal Stay by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/animals/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "animals", "1"]
+                },
+                "description": "Gets a single animal stay by ID."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"id\": 1,\n  \"name\": \"Buddy\",\n  \"kennelId\": 1,\n  \"kennelCode\": \"K-01\",\n  \"kennelBlock\": \"Block A\",\n  \"species\": \"Dog\",\n  \"sex\": \"Male\",\n  \"countryCode\": \"SG\",\n  \"countryName\": \"Singapore\",\n  \"microchip\": \"900082000123456\",\n  \"dateOfBirth\": \"2020-05-15\",\n  \"arrivalDate\": \"2024-01-10\",\n  \"releaseDate\": null,\n  \"status\": \"staying\",\n  \"createdBy\": 5,\n  \"createdAt\": \"2024-01-10T08:00:00Z\",\n  \"updatedAt\": \"2024-01-10T08:00:00Z\"\n}"
+                },
+                {
+                  "name": "404 Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Animal stay with id 1 not found.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "List Animal Stays",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/animals?status=staying&species=Dog&search=Buddy",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "animals"],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "staying",
+                      "description": "Filter by status: 'staying', 'released', 'deceased'. Omit for all.",
+                      "disabled": false
+                    },
+                    {
+                      "key": "species",
+                      "value": "Dog",
+                      "description": "Filter by species: 'Dog', 'Cat', 'Other'. Omit for all.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "Buddy",
+                      "description": "Search by animal name or microchip number.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Lists animal stays. Optionally filter by status, species, or search term (name/microchip)."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Buddy\",\n    \"kennelId\": 1,\n    \"kennelCode\": \"K-01\",\n    \"kennelBlock\": \"Block A\",\n    \"species\": \"Dog\",\n    \"sex\": \"Male\",\n    \"countryCode\": \"SG\",\n    \"countryName\": \"Singapore\",\n    \"microchip\": \"900082000123456\",\n    \"dateOfBirth\": \"2020-05-15\",\n    \"arrivalDate\": \"2024-01-10\",\n    \"releaseDate\": null,\n    \"status\": \"staying\",\n    \"createdBy\": 5,\n    \"createdAt\": \"2024-01-10T08:00:00Z\",\n    \"updatedAt\": \"2024-01-10T08:00:00Z\"\n  }\n]"
+                }
+              ]
+            },
+            {
+              "name": "Update Animal Stay Status",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"released\",\n  \"releaseDate\": \"2024-03-15\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/animals/1/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "animals", "1", "status"]
+                },
+                "description": "Updates the status of an animal stay. status: 'released' | 'deceased'. releaseDate is required when status is 'released'."
+              },
+              "response": [
+                {
+                  "name": "204 No Content",
+                  "status": "No Content",
+                  "code": 204,
+                  "header": [],
+                  "body": ""
+                },
+                {
+                  "name": "400 Bad Request",
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"releaseDate is required when status is 'released'.\"\n}"
+                },
+                {
+                  "name": "404 Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Animal stay not found.\"\n}"
+                },
+                {
+                  "name": "409 Conflict",
+                  "status": "Conflict",
+                  "code": 409,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"error\": \"Animal stay is already released or deceased.\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Reference Data",
+          "item": [
+            {
+              "name": "List Kennels",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/kennels?isActive=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "kennels"],
+                  "query": [
+                    {
+                      "key": "isActive",
+                      "value": "true",
+                      "description": "Filter by active status. Omit to return all.",
+                      "disabled": false
+                    }
+                  ]
+                },
+                "description": "Lists all kennels. Optionally filter by isActive."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "[\n  {\n    \"id\": 1,\n    \"code\": \"K-01\",\n    \"block\": \"Block A\",\n    \"isActive\": true\n  },\n  {\n    \"id\": 2,\n    \"code\": \"K-02\",\n    \"block\": \"Block A\",\n    \"isActive\": true\n  }\n]"
+                }
+              ]
+            },
+            {
+              "name": "List Countries",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/countries?isActive=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "countries"],
+                  "query": [
+                    {
+                      "key": "isActive",
+                      "value": "true",
+                      "description": "Filter by active status. Omit to return all.",
+                      "disabled": false
+                    }
+                  ]
+                },
+                "description": "Lists all countries. Optionally filter by isActive."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "[\n  {\n    \"code\": \"SG\",\n    \"name\": \"Singapore\",\n    \"isActive\": true\n  },\n  {\n    \"code\": \"AU\",\n    \"name\": \"Australia\",\n    \"isActive\": true\n  }\n]"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Arrival Exam (AQC)",
+      "description": "Arrival physical examination and draft management. Requires AqcStaff authorization.",
+      "item": [
+        {
+          "name": "Submit Arrival Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vetStaffId\": null,\n  \"weightKg\": 12.5,\n  \"mentation\": \"Alert\",\n  \"findings\": [\n    {\n      \"system\": \"skin\",\n      \"abnormal\": false,\n      \"note\": null,\n      \"photoKeys\": []\n    },\n    {\n      \"system\": \"eyes\",\n      \"abnormal\": true,\n      \"note\": \"Mild discharge\",\n      \"photoKeys\": [\"uploads/exams/abc123.jpg\"]\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/animals/1/exam",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "animals", "1", "exam"]
+            },
+            "description": "Submits the baseline physical examination for an animal stay. mentation: 'Responsive' | 'Calm' | 'Active' | 'Alert'. system: 'skin' | 'eyes' | 'nose' | 'ears' | 'mouth' | 'hydration' | 'respiratory'. Each system may appear at most once. vetStaffId must reference an aqc_staff member with role='vet'."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"stayId\": 1,\n  \"vetStaffId\": null,\n  \"weightKg\": 12.5,\n  \"mentation\": \"Alert\",\n  \"examinedAt\": \"2024-01-10T08:30:00Z\",\n  \"recordedBy\": 5,\n  \"findings\": [\n    {\n      \"id\": 1,\n      \"system\": \"skin\",\n      \"abnormal\": false,\n      \"note\": null,\n      \"photoKeys\": []\n    },\n    {\n      \"id\": 2,\n      \"system\": \"eyes\",\n      \"abnormal\": true,\n      \"note\": \"Mild discharge\",\n      \"photoKeys\": [\"uploads/exams/abc123.jpg\"]\n    }\n  ]\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"<validation message>\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Animal stay with id 1 not found.\"\n}"
+            },
+            {
+              "name": "409 Conflict",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"An arrival exam already exists for stay 1.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Arrival Exam",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/animals/1/exam",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "animals", "1", "exam"]
+            },
+            "description": "Gets the arrival exam for an animal stay."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"stayId\": 1,\n  \"vetStaffId\": null,\n  \"weightKg\": 12.5,\n  \"mentation\": \"Alert\",\n  \"examinedAt\": \"2024-01-10T08:30:00Z\",\n  \"recordedBy\": 5,\n  \"findings\": []\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"No arrival exam found for stay 1.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Save Exam Draft",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vetStaffId\": null,\n  \"weightKg\": null,\n  \"mentation\": \"Calm\",\n  \"findings\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/arrival-draft/exam",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "arrival-draft", "exam"]
+            },
+            "description": "Saves (or replaces) the exam portion of the current officer's arrival draft. All fields are optional. Creates the draft row if it does not yet exist."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "status": "No Content",
+              "code": 204,
+              "header": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Get Arrival Draft",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/arrival-draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "arrival-draft"]
+            },
+            "description": "Returns the current officer's full arrival draft including both the animal details and exam portions."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"detailsJson\": null,\n  \"examJson\": {\n    \"vetStaffId\": null,\n    \"weightKg\": null,\n    \"mentation\": \"Calm\",\n    \"findings\": null\n  },\n  \"updatedAt\": \"2024-01-10T08:15:00Z\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"No arrival draft found for the current officer.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Arrival Draft",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/arrival-draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "arrival-draft"]
+            },
+            "description": "Deletes the current officer's arrival draft (clears both the animal details and exam portions)."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "status": "No Content",
+              "code": 204,
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Daily Inspection (AQC)",
+      "description": "Daily AM/PM inspection endpoints. Requires AqcStaff authorization.",
+      "item": [
+        {
+          "name": "Submit Daily Inspection",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session\": \"AM\",\n  \"inspectionDate\": \"2026-11-12\",\n  \"mentation\": \"Alert\",\n  \"food\": \"Full\",\n  \"stool\": \"Firm\",\n  \"urine\": \"Yes\",\n  \"otherFindings\": null,\n  \"systemFindings\": [\n    { \"system\": \"skin\", \"finding\": \"normal\" },\n    { \"system\": \"eyes\", \"finding\": \"normal\" }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/animals/{{stayId}}/inspections",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "animals", "{{stayId}}", "inspections"]
+            },
+            "description": "Submits a daily AM or PM inspection for an animal stay. Only one inspection per session per day is permitted. The stay must be in active-monitoring status. session: AM | PM. mentation: Responsive | Calm | Active | Alert. food: Full | Half | Little | None. stool: Firm | Soft | Loose | Watery | None. urine: Yes | No. systemFindings[].system: skin | eyes | nose | ears | mouth | hydration | cardiorespiratory. systemFindings[].finding: normal | abnormal."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 101,\n  \"stayId\": 1,\n  \"inspectionDate\": \"2026-11-12\",\n  \"session\": \"AM\",\n  \"mentation\": \"Alert\",\n  \"food\": \"Full\",\n  \"stool\": \"Firm\",\n  \"urine\": \"Yes\",\n  \"otherFindings\": null,\n  \"systemFindings\": [\n    { \"id\": 201, \"system\": \"skin\", \"finding\": \"normal\" },\n    { \"id\": 202, \"system\": \"eyes\", \"finding\": \"normal\" }\n  ],\n  \"recordedBy\": 10,\n  \"recordedAt\": \"2026-11-12T08:00:00Z\"\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Session must be AM or PM.\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Animal stay not found.\"\n}"
+            },
+            {
+              "name": "409 Conflict — already recorded",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"AM inspection already recorded for this stay on 2026-11-12.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Daily Inspections",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/animals/{{stayId}}/inspections?date=2026-11-12",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "animals", "{{stayId}}", "inspections"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-11-12",
+                  "description": "Filter by inspection date (YYYY-MM-DD). Optional."
+                }
+              ]
+            },
+            "description": "Lists all daily inspections for an animal stay. Optionally filter by date (format: YYYY-MM-DD)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": 101,\n    \"stayId\": 1,\n    \"inspectionDate\": \"2026-11-12\",\n    \"session\": \"AM\",\n    \"mentation\": \"Alert\",\n    \"food\": \"Full\",\n    \"stool\": \"Firm\",\n    \"urine\": \"Yes\",\n    \"otherFindings\": null,\n    \"systemFindings\": [],\n    \"recordedBy\": 10,\n    \"recordedAt\": \"2026-11-12T08:00:00Z\"\n  }\n]"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Animal stay not found.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Daily Inspection by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/animals/inspections/{{inspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "animals", "inspections", "{{inspectionId}}"]
+            },
+            "description": "Gets a single daily inspection by its ID."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 101,\n  \"stayId\": 1,\n  \"inspectionDate\": \"2026-11-12\",\n  \"session\": \"AM\",\n  \"mentation\": \"Alert\",\n  \"food\": \"Full\",\n  \"stool\": \"Firm\",\n  \"urine\": \"Yes\",\n  \"otherFindings\": null,\n  \"systemFindings\": [],\n  \"recordedBy\": 10,\n  \"recordedAt\": \"2026-11-12T08:00:00Z\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"No daily inspection found with id 101.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Observation (AQC)",
+      "description": "Health observation endpoints. Requires AqcStaff authorization.",
+      "item": [
+        {
+          "name": "Submit Observation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stayId\": 1,\n  \"text\": \"Animal appears lethargic and not eating well.\",\n  \"media\": [\n    {\n      \"mediaKind\": \"photo\",\n      \"mediaKey\": \"obs/2026/11/photo_abc123.jpg\",\n      \"durationSec\": null,\n      \"sortOrder\": 0\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/observations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "observations"]
+            },
+            "description": "Submits a free-text health observation, optionally linked to an animal stay. Media keys (photos/videos) must be pre-uploaded via POST /api/v1/media/presign. The observation is created with status=processing and routed to AI analysis. mediaKind: 'photo' | 'video'."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 50,\n  \"stayId\": 1,\n  \"text\": \"Animal appears lethargic and not eating well.\",\n  \"submittedBy\": 10,\n  \"submittedAt\": \"2026-11-12T09:00:00Z\",\n  \"source\": \"staff\",\n  \"status\": \"processing\",\n  \"aiUnavailable\": false,\n  \"readyAt\": null,\n  \"media\": [\n    {\n      \"id\": 1,\n      \"mediaKind\": \"photo\",\n      \"mediaKey\": \"obs/2026/11/photo_abc123.jpg\",\n      \"durationSec\": null,\n      \"sortOrder\": 0\n    }\n  ]\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Text is required.\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Animal stay not found.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Observation by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/observations/{{observationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "observations", "{{observationId}}"]
+            },
+            "description": "Gets a single observation by its ID."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 50,\n  \"stayId\": 1,\n  \"text\": \"Animal appears lethargic and not eating well.\",\n  \"submittedBy\": 10,\n  \"submittedAt\": \"2026-11-12T09:00:00Z\",\n  \"source\": \"staff\",\n  \"status\": \"ready\",\n  \"aiUnavailable\": false,\n  \"readyAt\": \"2026-11-12T09:01:30Z\",\n  \"media\": []\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"No observation found with id 50.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Observations for Animal Stay",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/animals/{{stayId}}/observations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "animals", "{{stayId}}", "observations"]
+            },
+            "description": "Lists all observations for an animal stay, ordered most recent first."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": 50,\n    \"stayId\": 1,\n    \"text\": \"Animal appears lethargic.\",\n    \"submittedBy\": 10,\n    \"submittedAt\": \"2026-11-12T09:00:00Z\",\n    \"source\": \"staff\",\n    \"status\": \"ready\",\n    \"aiUnavailable\": false,\n    \"readyAt\": \"2026-11-12T09:01:30Z\",\n    \"media\": []\n  }\n]"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Animal stay not found.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Medication (AQC)",
+      "description": "Medication administration endpoints. Requires AqcStaff authorization.",
+      "item": [
+        {
+          "name": "List Animals with Medication",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medication/animals?date=2026-11-12",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medication", "animals"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-11-12",
+                  "description": "Date for which to list animals with active medication schedules (YYYY-MM-DD). Required."
+                }
+              ]
+            },
+            "description": "Returns animals that have at least one active medication schedule on the given date. Animals with overdue doses appear first. Contractor scope is applied server-side."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"animal\": {\n      \"id\": 1,\n      \"name\": \"Buddy\",\n      \"kennel\": \"A-01\",\n      \"species\": \"Dog\",\n      \"sex\": \"Male\",\n      \"countryCode\": \"SG\",\n      \"microchip\": \"123456789012345\",\n      \"dateOfBirth\": \"2020-01-15\",\n      \"arrivalDate\": \"2026-11-01\",\n      \"releaseDate\": null,\n      \"status\": \"active-monitoring\",\n      \"today\": {\n        \"arrivalExam\": \"done\",\n        \"amInspection\": \"done\",\n        \"pmInspection\": \"due\"\n      }\n    },\n    \"scheduleCount\": 2,\n    \"dueCount\": 1,\n    \"overdueCount\": 0\n  }\n]"
+            },
+            {
+              "name": "400 Bad Request — missing date",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Query parameter 'date' is required (YYYY-MM-DD).\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Animal Medication Day",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/animals/{{stayId}}/medication?date=2026-11-12",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "animals", "{{stayId}}", "medication"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-11-12",
+                  "description": "Date for which to retrieve dose slots (YYYY-MM-DD). Required."
+                }
+              ]
+            },
+            "description": "Returns all dose slots for the given animal on the given date, with computed status (upcoming / due / overdue / administered)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"animal\": {\n    \"id\": 1,\n    \"name\": \"Buddy\",\n    \"kennel\": \"A-01\",\n    \"species\": \"Dog\",\n    \"sex\": \"Male\",\n    \"countryCode\": \"SG\",\n    \"microchip\": \"123456789012345\",\n    \"dateOfBirth\": \"2020-01-15\",\n    \"arrivalDate\": \"2026-11-01\",\n    \"releaseDate\": null,\n    \"status\": \"active-monitoring\",\n    \"today\": {\n      \"arrivalExam\": \"done\",\n      \"amInspection\": \"done\",\n      \"pmInspection\": \"due\"\n    }\n  },\n  \"scheduleCount\": 2,\n  \"slots\": [\n    {\n      \"slot\": \"2026-11-12T08:00\",\n      \"scheduleId\": 10,\n      \"item\": \"Amoxicillin\",\n      \"dose\": \"250mg\",\n      \"frequency\": \"2x daily\",\n      \"startDate\": \"2026-11-10\",\n      \"endDate\": \"2026-11-17\",\n      \"time\": \"08:00\",\n      \"status\": \"administered\",\n      \"administration\": {\n        \"id\": 5,\n        \"scheduleId\": 10,\n        \"animalId\": 1,\n        \"slot\": \"2026-11-12T08:00\",\n        \"administeredAt\": 1731394800000,\n        \"by\": \"Officer John\",\n        \"remarks\": \"Given with food\"\n      }\n    },\n    {\n      \"slot\": \"2026-11-12T18:00\",\n      \"scheduleId\": 10,\n      \"item\": \"Amoxicillin\",\n      \"dose\": \"250mg\",\n      \"frequency\": \"2x daily\",\n      \"startDate\": \"2026-11-10\",\n      \"endDate\": \"2026-11-17\",\n      \"time\": \"18:00\",\n      \"status\": \"due\",\n      \"administration\": null\n    }\n  ]\n}"
+            },
+            {
+              "name": "400 Bad Request — missing date",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Query parameter 'date' is required (YYYY-MM-DD).\"\n}"
+            },
+            {
+              "name": "403 Forbidden — out of scope",
+              "status": "Forbidden",
+              "code": 403,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Animal is not within your contractor scope.\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Animal stay not found.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Record Medication Administration",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": 10,\n  \"slot\": \"2026-11-12T18:00\",\n  \"remarks\": \"Given with food\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/medication/administrations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "medication", "administrations"]
+            },
+            "description": "Records a dose administration for a scheduled medication slot. One record per (scheduleId, slot) — duplicate returns 409. administeredAt and administeredBy are captured from the server clock and JWT."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 5,\n  \"scheduleId\": 10,\n  \"animalId\": 1,\n  \"slot\": \"2026-11-12T18:00\",\n  \"administeredAt\": 1731430800000,\n  \"by\": \"Officer John\",\n  \"remarks\": \"Given with food\"\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Slot is required.\"\n}"
+            },
+            {
+              "name": "403 Forbidden — out of scope",
+              "status": "Forbidden",
+              "code": 403,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Animal is not within your contractor scope.\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Medication schedule not found.\"\n}"
+            },
+            {
+              "name": "409 Conflict — already recorded",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"MedicationError\",\n  \"kind\": \"already_recorded\",\n  \"message\": \"Dose already recorded for this slot.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Media (AQC)",
+      "description": "Media presign endpoints for uploading photos and videos. Requires AqcStaff authorization.",
+      "item": [
+        {
+          "name": "Generate Presigned Upload URLs",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"mediaKind\": \"photo\",\n      \"context\": \"observation\",\n      \"filename\": \"photo.jpg\",\n      \"contentType\": \"image/jpeg\"\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/media/presign",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "media", "presign"]
+            },
+            "description": "Generates presigned PUT URLs for direct media upload to object storage. Upload each file to the returned uploadUrl using HTTP PUT, then supply the returned mediaKey when submitting an observation or arrival exam. mediaKind: 'photo' | 'video'. context: 'observation' | 'exam'. contentType examples: 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'video/mp4', 'video/quicktime'. Maximum 5 items per request. URLs expire in 5 minutes."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"items\": [\n    {\n      \"mediaKey\": \"obs/2026/11/abc123_photo.jpg\",\n      \"uploadUrl\": \"https://storage.example.com/obs/2026/11/abc123_photo.jpg?X-Amz-Signature=...\",\n      \"expiresAt\": \"2026-11-12T09:05:00Z\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"Maximum 5 items per request.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Notifications (AQC)",
+      "description": "Device push token management endpoints. Requires AqcStaff authorization.",
+      "item": [
+        {
+          "name": "Register or Refresh Push Token",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"<fcm-or-apns-device-token>\",\n  \"platform\": \"android\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/push-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "me", "push-token"]
+            },
+            "description": "Registers or refreshes the calling staff member's FCM/APNs device push token. One active token is stored per (staffId, platform); subsequent calls for the same platform replace the previous token. platform: 'android' | 'ios'. Token max length: 512 chars."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "status": "No Content",
+              "code": 204,
+              "header": [],
+              "body": ""
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"validation-error\",\n  \"message\": \"Platform must be 'android' or 'ios'.\",\n  \"field\": \"platform\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Revoke Push Token",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/push-token?platform=android",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "me", "push-token"],
+              "query": [
+                {
+                  "key": "platform",
+                  "value": "android",
+                  "description": "Platform whose token should be revoked: 'android' | 'ios'."
+                }
+              ]
+            },
+            "description": "Revokes the push token for the specified platform. Should be called on explicit logout so the device stops receiving notifications. Idempotent — returns 204 even if no token was registered."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "status": "No Content",
+              "code": 204,
+              "header": [],
+              "body": ""
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error\": \"validation-error\",\n  \"message\": \"Platform must be 'android' or 'ios'.\",\n  \"field\": \"platform\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

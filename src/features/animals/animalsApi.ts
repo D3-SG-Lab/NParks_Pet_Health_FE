@@ -1,10 +1,13 @@
 /**
  * Animal picker, profile, health-record timeline and AI summary data access.
  *
- * MOCK: reads the in-memory demo store. OUTSTANDING endpoints: active animal list and search
- * (BE-009), the per-stay timeline feed (BE-020) and the 30-day AI summary with citations (AI-005).
- * The backend must also apply contractor kennel scoping (BE-005).
+ * With EXPO_PUBLIC_API_URL set, backend animals and their exam, inspections, observations and today's
+ * medication are loaded into the store first (animalSource.ts), and a timeline row opens the backend's
+ * record (GET /animals/inspections/{id}, GET /observations/{id}). The timeline is then built here from
+ * those records, as the backend has no timeline feed (BE-020). Still MOCK: cases on the timeline and the
+ * 30-day AI summary with citations (AI-005), which have no endpoints yet.
  */
+import { isApiEnabled } from '@/api';
 import { SESSION_DUE_TIME, describeInspection, isInspectionAbnormal } from '@/domain/describe';
 import {
   EXAM_SYSTEMS,
@@ -20,12 +23,16 @@ import {
   type Observation,
   type TimelineEntry,
 } from '@/domain/types';
+import { getInspection } from '@/features/inspections/inspectionBackend';
+import { getObservation } from '@/features/observations/observationBackend';
 import { summariseAnimal } from '@/mock/ai';
 import { mockDb, mockVets } from '@/mock/db';
 import { overTheWire, simulateLatency } from '@/mock/latency';
 import { resolvePendingAnalyses } from '@/mock/processing';
-import { ScopeError, animalsInScope, canSeeAnimal } from '@/mock/scope';
+import { ScopeError, animalsInScope, canSeeAnimal, isBackendId } from '@/mock/scope';
 import { isoDateOf, msAt, sessionFor } from '@/utils/dates';
+
+import { ensureAnimal, loadAnimalRecords, syncAnimals } from './animalSource';
 
 /** Picker / list status, in the wireframe's words. */
 export type AnimalListStatus = 'unwell' | 'due' | 'active';
@@ -49,6 +56,7 @@ function toListItem(animal: Animal, session: InspectionSession): AnimalListItem 
 /** Active animals the user may see, in kennel order. */
 export async function listAnimals(actor: Actor, now: number = Date.now()): Promise<AnimalListItem[]> {
   await simulateLatency();
+  await syncAnimals();
   const session = sessionFor(new Date(now));
   return overTheWire(animalsInScope(actor)
     .sort((a, b) => a.kennel.localeCompare(b.kennel, undefined, { numeric: true }))
@@ -226,6 +234,7 @@ const DAY_MS = 24 * 60 * 60_000;
 
 export async function getAnimalProfile(actor: Actor, animalId: string, now: number = Date.now()): Promise<AnimalProfile | null> {
   await simulateLatency();
+  if (await ensureAnimal(animalId)) await loadAnimalRecords(animalId, now);
   resolvePendingAnalyses(now);
   const animal = mockDb.animals.find((a) => a.id === animalId);
   if (!animal) return null;
@@ -276,11 +285,13 @@ export async function getRecordDetail(entry: Pick<TimelineEntry, 'id' | 'kind' |
   await simulateLatency(150);
   switch (entry.kind) {
     case 'inspection': {
-      const record = mockDb.inspections.find((i) => i.id === entry.id);
+      // Backend records are fetched fresh (GET /animals/inspections/{id}); demo ones come from the store.
+      const record = isApiEnabled() && isBackendId(entry.id) ? await getInspection(entry.id) : mockDb.inspections.find((i) => i.id === entry.id);
       return record ? { kind: 'inspection', record } : null;
     }
     case 'observation': {
-      const record = mockDb.observations.find((o) => o.id === entry.id);
+      // GET /observations/{id} for a backend observation not loaded yet; the device copy keeps the AI state.
+      const record = isApiEnabled() && isBackendId(entry.id) ? await getObservation(entry.id) : mockDb.observations.find((o) => o.id === entry.id);
       return record ? { kind: 'observation', record } : null;
     }
     case 'medication': {

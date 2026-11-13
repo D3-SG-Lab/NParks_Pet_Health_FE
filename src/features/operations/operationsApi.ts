@@ -7,6 +7,7 @@
  */
 import { OVERDUE_AFTER_MS, SESSION_DUE_TIME } from '@/domain/describe';
 import type { Actor, OperationsAlert, OperationsSummary } from '@/domain/types';
+import { syncAnimals } from '@/features/animals/animalSource';
 import { mockDb } from '@/mock/db';
 import { overTheWire, simulateLatency } from '@/mock/latency';
 import { resolvePendingAnalyses } from '@/mock/processing';
@@ -15,6 +16,7 @@ import { isoDateOf, msAt, sessionFor } from '@/utils/dates';
 
 export async function getOperationsSummary(actor: Actor, now: number = Date.now()): Promise<OperationsSummary> {
   await simulateLatency();
+  await syncAnimals();
   resolvePendingAnalyses(now);
   const session = sessionFor(new Date(now));
   const animals = animalsInScope(actor);

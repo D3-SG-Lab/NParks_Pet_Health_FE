@@ -6,6 +6,7 @@
  * a reason (officers only) and manual reopen. The API must enforce the officer-only rules too.
  */
 import type { Actor, Animal, HealthCase, StaffMember } from '@/domain/types';
+import { syncAnimals } from '@/features/animals/animalSource';
 import { summariseCase } from '@/mock/ai';
 import { mockDb, newMockId } from '@/mock/db';
 import { overTheWire, simulateLatency } from '@/mock/latency';
@@ -42,6 +43,7 @@ function staffById(id: string | null): StaffMember | null {
 /** All cases the user may see, most recently updated first. */
 export async function listCases(actor: Actor, now: number = Date.now()): Promise<CaseListItem[]> {
   await simulateLatency();
+  await syncAnimals();
   const today = isoDateOf(now);
   return overTheWire(mockDb.cases
     .flatMap((healthCase) => {
