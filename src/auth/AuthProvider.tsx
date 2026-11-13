@@ -58,14 +58,17 @@ export interface SessionContextValue {
 
 export const SessionContext = createContext<SessionContextValue | null>(null);
 
-function mockTokens(provider: AuthProviderId): TokenSet {
-  // Double guard: the require() sits behind __DEV__ so production bundles drop the mock module.
+/** The development mock module. Double guard: the require() sits behind __DEV__ so production bundles drop it. */
+function mockModule(): typeof import('./mock') {
   if (__DEV__ && isMockAuthEnabled()) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mock: typeof import('./mock') = require('./mock');
-    return mock.createMockTokens(provider);
+    return require('./mock');
   }
   throw new AuthError('not_configured');
+}
+
+function mockTokens(provider: AuthProviderId): Promise<TokenSet> {
+  return mockModule().createMockSessionTokens(provider);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -130,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const run = async (): Promise<boolean> => {
       try {
         if (!current.refreshToken) throw new AuthError('provider', 'No refresh token');
-        const next = current.mock ? mockTokens(current.provider) : await refreshWithProvider(current.provider, current);
+        const next = current.mock ? await mockModule().refreshMockSessionTokens(current.provider, current) : await refreshWithProvider(current.provider, current);
         await applyTokens(current.provider, next, current.mock);
         return true;
       } catch (error) {
@@ -164,7 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const role = isAuthBypassEnabled() ? bypassRole() : undefined;
       if (role) {
         try {
-          await applyTokens(role, mockTokens(role), true);
+          await applyTokens(role, await mockTokens(role), true);
           if (cancelled) return;
           lastActiveRef.current = Date.now();
           return updateStatus('signedIn');
@@ -277,7 +280,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (provider: AuthProviderId): Promise<AuthError | null> => {
       try {
         const mock = isMockAuthEnabled();
-        const tokens = mock ? mockTokens(provider) : await signInWithProvider(provider);
+        const tokens = mock ? await mockTokens(provider) : await signInWithProvider(provider);
         try {
           await applyTokens(provider, tokens, mock);
         } catch (error) {
@@ -301,6 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isAuthBypassEnabled()) setBypassRole(null);
     await endSession(null);
     if (current && !current.mock) void revokeWithProvider(current.provider, current.refreshToken);
+    if (current?.mock && isMockAuthEnabled()) void mockModule().revokeMockSession(current);
   }, [endSession]);
 
   const unlock = useCallback(async () => {

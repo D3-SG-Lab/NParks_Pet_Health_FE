@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 
 import { focusRing, inputStates, theme } from '@/theme';
@@ -8,7 +8,11 @@ import { Pressable } from './Pressable';
 import { BottomSheet } from './BottomSheet';
 import { FormField } from './FormField';
 import { Icon } from './Icon';
+import { SearchField } from './SearchField';
 import { inputBaseStyle } from './TextField';
+
+/** Lists longer than this get a search box at the top of the sheet (countries, kennels from the API). */
+const SEARCH_THRESHOLD = 10;
 
 export interface SelectOption {
   value: string;
@@ -58,7 +62,18 @@ export function SelectField({
   testID,
 }: SelectFieldProps) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const selected = options.find((option) => option.value === value);
+  const searchable = options.length > SEARCH_THRESHOLD;
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((option) => [option.label, option.value, option.description ?? ''].some((text) => text.toLowerCase().includes(q)));
+  }, [options, query]);
+  const close = () => {
+    setOpen(false);
+    setQuery('');
+  };
 
   return (
     <FormField label={label} required={required} disabled={disabled} error={error} helper={helper}>
@@ -87,7 +102,7 @@ export function SelectField({
         )}
       </Pressable>
 
-      <BottomSheet visible={open} title={label} onClose={() => setOpen(false)} testID={testID ? `${testID}-sheet` : undefined}>
+      <BottomSheet visible={open} title={label} onClose={close} list testID={testID ? `${testID}-sheet` : undefined}>
         {loadError ? (
           <View style={styles.message}>
             <AppText tone="danger" accessibilityLiveRegion="polite">
@@ -106,43 +121,61 @@ export function SelectField({
             {loading ? 'Loading…' : 'No options available.'}
           </AppText>
         ) : (
-          <FlatList
-            data={options}
-            keyExtractor={(option) => option.value}
-            renderItem={({ item }) => {
-              const isSelected = item.value === value;
-              return (
-                <Pressable
-                  testID={testID ? `${testID}-option-${item.value}` : undefined}
-                  accessibilityRole="menuitem"
-                  accessibilityLabel={item.description ? `${item.label}. ${item.description}` : item.label}
-                  accessibilityState={{ selected: isSelected }}
-                  onPress={() => {
-                    onChange(item.value);
-                    setOpen(false);
-                  }}
-                  style={({ pressed, focused }: { pressed: boolean; focused?: boolean }) => [
-                    styles.option,
-                    isSelected && styles.optionSelected,
-                    pressed && styles.optionPressed,
-                    focused && focusRing,
-                  ]}
-                >
-                  <View style={styles.optionText}>
-                    <AppText variant={mono ? 'mono' : 'body'} bold={isSelected} style={mono ? styles.monoValue : undefined}>
-                      {item.label}
-                    </AppText>
-                    {item.description ? (
-                      <AppText variant="bodyS" tone="muted">
-                        {item.description}
+          <>
+            {searchable ? (
+              <SearchField
+                value={query}
+                onChangeText={setQuery}
+                placeholder={`Search ${label.toLowerCase()}`}
+                testID={testID ? `${testID}-search` : undefined}
+              />
+            ) : null}
+            <FlatList
+              data={shown}
+              keyExtractor={(option) => option.value}
+              keyboardShouldPersistTaps="handled"
+              initialNumToRender={20}
+              style={styles.list}
+              ListEmptyComponent={
+                <AppText tone="muted" style={styles.message} accessibilityLiveRegion="polite">
+                  {`No matches for “${query.trim()}”.`}
+                </AppText>
+              }
+              renderItem={({ item }) => {
+                const isSelected = item.value === value;
+                return (
+                  <Pressable
+                    testID={testID ? `${testID}-option-${item.value}` : undefined}
+                    accessibilityRole="menuitem"
+                    accessibilityLabel={item.description ? `${item.label}. ${item.description}` : item.label}
+                    accessibilityState={{ selected: isSelected }}
+                    onPress={() => {
+                      onChange(item.value);
+                      close();
+                    }}
+                    style={({ pressed, focused }: { pressed: boolean; focused?: boolean }) => [
+                      styles.option,
+                      isSelected && styles.optionSelected,
+                      pressed && styles.optionPressed,
+                      focused && focusRing,
+                    ]}
+                  >
+                    <View style={styles.optionText}>
+                      <AppText variant={mono ? 'mono' : 'body'} bold={isSelected} style={mono ? styles.monoValue : undefined}>
+                        {item.label}
                       </AppText>
-                    ) : null}
-                  </View>
-                  {isSelected ? <Icon name="checkmark" color={theme.colors.primary} /> : null}
-                </Pressable>
-              );
-            }}
-          />
+                      {item.description ? (
+                        <AppText variant="bodyS" tone="muted">
+                          {item.description}
+                        </AppText>
+                      ) : null}
+                    </View>
+                    {isSelected ? <Icon name="checkmark" color={theme.colors.primary} /> : null}
+                  </Pressable>
+                );
+              }}
+            />
+          </>
         )}
       </BottomSheet>
     </FormField>
@@ -158,6 +191,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing.s3,
   },
   value: { flex: 1 },
+  list: { flexShrink: 1, minHeight: 0 },
   pressed: { backgroundColor: theme.colors.surface2 },
   monoValue: { fontSize: theme.text.body.fontSize, lineHeight: theme.text.body.lineHeight },
   option: {

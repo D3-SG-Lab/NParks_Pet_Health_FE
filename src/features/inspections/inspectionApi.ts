@@ -1,11 +1,14 @@
 /**
  * Daily inspection (AM/PM) data access.
  *
- * MOCK: reads and writes the in-memory demo store. OUTSTANDING endpoints (BE-011): checks due per
- * session, create inspection (one AM and one PM per animal per day, edits audited), and the
- * "abnormal inspection" event that feeds AI routing. Offline capture with ordered sync (FE-018,
- * local SQLite) is also outstanding: records are saved straight to the mock store.
+ * Backend animals (EXPO_PUBLIC_API_URL set): inspections are saved with POST /animals/{stayId}/inspections
+ * and loaded with GET /animals/{stayId}/inspections (inspectionBackend.ts; animalSource.ts loads them
+ * with the animals, so the board and today's status come from the server).
+ * Demo animals, and the routing of abnormal findings (link to an open case or send to AI triage), stay on
+ * the in-memory demo store: the backend has no case or AI-routing endpoints yet. Offline capture with
+ * ordered sync (FE-018) is simulated for demo records only; backend records are sent straight away.
  */
+import { ApiError, isApiEnabled } from '@/api';
 import {
   describeInspectionFindings,
   inspectionClinicalSystems,
@@ -21,12 +24,15 @@ import {
   type InspectionSession,
   type InspectionSystem,
 } from '@/domain/types';
+import { ensureAnimal, syncAnimals } from '@/features/animals/animalSource';
 import { analyseObservation } from '@/mock/ai';
 import { mockDb, mockSigns, newMockId } from '@/mock/db';
 import { overTheWire, simulateLatency } from '@/mock/latency';
-import { ScopeError, animalsInScope, canSeeAnimal } from '@/mock/scope';
+import { ScopeError, animalsInScope, canSeeAnimal, isBackendId } from '@/mock/scope';
 import { queueIfOffline } from '@/mock/sync';
 import { formatTime, isoDateOf } from '@/utils/dates';
+
+import * as backend from './inspectionBackend';
 
 export class InspectionError extends Error {
   readonly kind: 'already_recorded' | 'not_found';
@@ -63,6 +69,7 @@ export interface InspectionBoard {
 /** Animals in scope with their inspection for the given day and session, in kennel order. */
 export async function getInspectionBoard(actor: Actor, session: InspectionSession, now: number = Date.now()): Promise<InspectionBoard> {
   await simulateLatency();
+  await syncAnimals();
   const date = isoDateOf(now);
   const items = animalsInScope(actor)
     .sort((a, b) => a.kennel.localeCompare(b.kennel, undefined, { numeric: true }))
@@ -96,6 +103,7 @@ export interface SubmitInspectionResult {
 
 export async function submitInspection({ animalId, session, input, actor, now = Date.now() }: SubmitInspectionInput): Promise<SubmitInspectionResult> {
   await simulateLatency();
+  await ensureAnimal(animalId);
   const animal = mockDb.animals.find((a) => a.id === animalId);
   if (!animal) throw new InspectionError('not_found', 'This animal is no longer under active monitoring.');
   if (!canSeeAnimal(actor, animal)) throw new ScopeError();
@@ -105,25 +113,38 @@ export async function submitInspection({ animalId, session, input, actor, now = 
     throw new InspectionError('already_recorded', `The ${session} inspection for ${animal.name} was already recorded.`);
   }
 
-  const record: InspectionRecord = {
-    ...input,
-    otherFindings: input.otherFindings.trim(),
-    id: newMockId('insp'),
-    animalId,
-    date,
-    session,
-    recordedAt: now,
-    recordedBy: actor.name,
-  };
-  mockDb.inspections.push(record);
-  // Offline: saved on the device and sent in order later (FE-018). The screens still update now.
-  queueIfOffline({
-    kind: 'inspection',
-    recordId: record.id,
-    title: `${session} inspection · ${animal.kennel} ${animal.name}`,
-    detail: `Saved ${formatTime(now)} on device`,
-    savedAt: now,
-  });
+  let record: InspectionRecord;
+  if (isApiEnabled() && isBackendId(animalId)) {
+    try {
+      record = await backend.submitInspection(animalId, session, date, input, actor.name);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) throw new InspectionError('already_recorded', error.message);
+      if (error instanceof ApiError && error.status === 404) throw new InspectionError('not_found', error.message);
+      if (error instanceof ApiError && error.status === 403) throw new ScopeError();
+      throw error;
+    }
+    mockDb.inspections.push(record);
+  } else {
+    record = {
+      ...input,
+      otherFindings: input.otherFindings.trim(),
+      id: newMockId('insp'),
+      animalId,
+      date,
+      session,
+      recordedAt: now,
+      recordedBy: actor.name,
+    };
+    mockDb.inspections.push(record);
+    // Offline: saved on the device and sent in order later (FE-018). The screens still update now.
+    queueIfOffline({
+      kind: 'inspection',
+      recordId: record.id,
+      title: `${session} inspection · ${animal.kennel} ${animal.name}`,
+      detail: `Saved ${formatTime(now)} on device`,
+      savedAt: now,
+    });
+  }
   if (session === 'AM') animal.today.amInspection = 'done';
   else animal.today.pmInspection = 'done';
 

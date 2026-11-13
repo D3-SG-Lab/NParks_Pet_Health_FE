@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { rejectionMessage } from '@/api';
 import { useActor } from '@/auth';
 import {
   AppText,
@@ -262,7 +263,7 @@ function DoseList({ slots, animalName }: { slots: DoseSlot[]; animalName: string
               <Banner
                 kind="error"
                 title={error instanceof MedicationError && error.kind === 'already_recorded' ? 'Already recorded' : "Couldn't record the dose"}
-                message={error instanceof MedicationError ? error.message : 'Please try again.'}
+                message={error instanceof MedicationError ? error.message : rejectionMessage(error, 'Please try again.')}
                 testID="medication-error"
               />
             ) : null}

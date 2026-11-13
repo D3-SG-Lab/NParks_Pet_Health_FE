@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { rejectionMessage } from '@/api';
 import { useActor } from '@/auth';
 import {
   Pressable,
@@ -95,7 +96,12 @@ export function NewObservationScreen({ animalId: initialId }: NewObservationScre
       }
     >
       {submit.isError ? (
-        <Banner kind="error" title="Couldn't submit the observation" message="Your text and photos are kept. Please try again." testID="observation-error" />
+        <Banner
+          kind="error"
+          title="Couldn't submit the observation"
+          message={rejectionMessage(submit.error, 'Your text and photos are kept. Please try again.')}
+          testID="observation-error"
+        />
       ) : null}
 
       <FormField label="Animal" aside="Optional — AI can match from your text">

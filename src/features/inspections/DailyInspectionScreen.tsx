@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { rejectionMessage } from '@/api';
 import { useActor } from '@/auth';
 import {
   AppText,
@@ -255,7 +256,7 @@ export function DailyInspectionScreen({ animalId: focusedId }: DailyInspectionSc
             <Banner
               kind="error"
               title={submitError instanceof InspectionError && submitError.kind === 'already_recorded' ? 'Already recorded' : "Couldn't save the inspection"}
-              message={submitError instanceof InspectionError ? submitError.message : 'Your entries are kept. Please try again.'}
+              message={submitError instanceof InspectionError ? submitError.message : rejectionMessage(submitError, 'Your entries are kept. Please try again.')}
               testID="inspection-error"
             />
           ) : null}
