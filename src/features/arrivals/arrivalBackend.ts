@@ -1,7 +1,8 @@
 /**
  * Arrival endpoints on the real backend (used by arrivalApi.ts when EXPO_PUBLIC_API_URL is set).
  *
- * Integrated: GET /kennels, GET /countries, GET /master-data/vet-specialisations (the vet picker),
+ * Integrated: GET /kennels, GET /countries, GET /master-data/species (the species choice),
+ * GET /master-data/vet-specialisations (the vet picker),
  * POST /media/presign + PUT to the returned URL (exam photos), GET /animals (kennel occupants, microchip check),
  * POST /animals (register the stay, on completing step 1), POST /animals/{stayId}/exam (step 2),
  * GET / DELETE /arrival-draft and PUT /arrival-draft/exam.
@@ -23,6 +24,7 @@ import {
   getApiV1ArrivalDraft,
   getApiV1Countries,
   getApiV1Kennels,
+  getApiV1MasterDataSpecies,
   getApiV1MasterDataVetSpecialisations,
   postApiV1Animals,
   postApiV1AnimalsByStayIdExam,
@@ -72,6 +74,13 @@ export async function listKennelOptions(): Promise<KennelOptionShape[]> {
 export async function listCountries(): Promise<Country[]> {
   const countries = await unwrap(getApiV1Countries({ query: { isActive: true } }));
   return countries.map(({ code, name }) => ({ code, name }));
+}
+
+/** Active species names (GET /master-data/species), alphabetical with "Other" last. POST /animals takes the name. */
+export async function listSpecies(): Promise<string[]> {
+  const entries = await unwrap(getApiV1MasterDataSpecies({ query: { isActive: true } }));
+  const last = (name: string) => (name.toLowerCase() === 'other' ? 1 : 0);
+  return entries.map((entry) => entry.name).sort((a, b) => last(a) - last(b) || a.localeCompare(b));
 }
 
 /** The vet picker: active entries of GET /master-data/vet-specialisations, by name. */
@@ -142,7 +151,7 @@ function fromDetailsJson(json: unknown): ArrivalDetailsInput | null {
   return {
     name: text(value.name),
     kennel: text(value.kennel) || null,
-    species: oneOf(SPECIES, value.species) ?? 'Dog',
+    species: text(value.species) || 'Dog',
     countryCode: text(value.countryCode) || null,
     microchip: text(value.microchip),
     sex: oneOf(SEXES, value.sex),

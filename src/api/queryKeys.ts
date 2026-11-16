@@ -9,6 +9,7 @@ export const queryKeys = {
   record: (id: string) => ['animals', 'record', id] as const,
   kennels: ['kennels'] as const,
   vets: ['vets'] as const,
+  species: ['species'] as const,
   countries: ['countries'] as const,
   arrivalDraft: ['arrival', 'draft'] as const,
   inspections: ['inspections'] as const,

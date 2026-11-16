@@ -433,7 +433,8 @@ export interface ArrivalExamInput {
 export interface ArrivalDetailsInput {
   name: string;
   kennel: string | null;
-  species: Species;
+  /** A species name from the species list (master data on the backend); the animal shows unknown ones as Other. */
+  species: string;
   countryCode: string | null;
   microchip: string;
   sex: Sex | null;

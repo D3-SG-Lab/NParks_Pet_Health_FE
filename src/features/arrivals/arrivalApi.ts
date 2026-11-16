@@ -13,14 +13,15 @@
  * The backend must enforce microchip uniqueness and that only officers can create arrivals.
  */
 import { isApiEnabled } from '@/api';
-import type {
-  Animal,
-  ArrivalDetailsInput,
-  ArrivalDraft,
-  ArrivalExamInput,
-  ArrivalExamRecord,
-  Country,
-  Vet,
+import {
+  SPECIES,
+  type Animal,
+  type ArrivalDetailsInput,
+  type ArrivalDraft,
+  type ArrivalExamInput,
+  type ArrivalExamRecord,
+  type Country,
+  type Vet,
 } from '@/domain/types';
 import { ensureAnimal, invalidateAnimals } from '@/features/animals/animalSource';
 import { mockCountries, mockDb, mockKennels, mockVets, newMockId } from '@/mock/db';
@@ -65,6 +66,13 @@ export async function listVets(): Promise<Vet[]> {
   if (isApiEnabled()) return backend.listVets();
   await simulateLatency();
   return [...mockVets];
+}
+
+/** Species to choose from: the backend's active species, or the demo ones. */
+export async function listSpecies(): Promise<string[]> {
+  if (isApiEnabled()) return backend.listSpecies();
+  await simulateLatency();
+  return [...SPECIES];
 }
 
 export async function listCountries(): Promise<Country[]> {
@@ -207,7 +215,7 @@ export async function completeArrival({ details, exam }: CompleteArrivalInput): 
     id: newMockId('animal'),
     name: details.name.trim(),
     kennel: details.kennel,
-    species: details.species,
+    species: SPECIES.find((s) => s === details.species) ?? 'Other',
     sex: details.sex,
     countryCode: details.countryCode,
     microchip,

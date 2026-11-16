@@ -8,6 +8,7 @@ import {
   getArrivalDraft,
   isMicrochipTaken,
   listKennelOptions,
+  listSpecies,
   listVets,
   registerArrival,
 } from '@/features/arrivals/arrivalApi';
@@ -25,6 +26,7 @@ jest.mock('@/api/generated', () => ({
   getApiV1ArrivalDraft: jest.fn(),
   putApiV1ArrivalDraftExam: jest.fn(),
   deleteApiV1ArrivalDraft: jest.fn(),
+  getApiV1MasterDataSpecies: jest.fn(),
   getApiV1MasterDataVetSpecialisations: jest.fn(),
   postApiV1MediaPresign: jest.fn(),
 }));
@@ -172,6 +174,14 @@ describe('arrivals on the backend API', () => {
     api.postApiV1Animals.mockImplementation(() => fail(409, { error: 'An active stay already exists for this microchip.' }));
     await expect(registerArrival(details)).rejects.toMatchObject({ kind: 'microchip_taken' });
     expect(mockDb.draft?.registeredStay ?? null).toBeNull();
+  });
+
+  it('lists the active species by name, with Other last', async () => {
+    api.getApiV1MasterDataSpecies.mockImplementation(() =>
+      ok(['Other', 'Dog', 'Cat'].map((name, id) => ({ id, name, isActive: true, createdAt: '', updatedAt: '' }))),
+    );
+    expect(await listSpecies()).toEqual(['Cat', 'Dog', 'Other']);
+    expect(api.getApiV1MasterDataSpecies).toHaveBeenCalledWith({ query: { isActive: true } });
   });
 
   it('lists vets from the active vet specialisations', async () => {

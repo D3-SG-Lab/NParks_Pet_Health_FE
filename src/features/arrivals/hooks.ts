@@ -8,6 +8,7 @@ import {
   getArrivalDraft,
   listCountries,
   listKennelOptions,
+  listSpecies,
   listVets,
   registerArrival,
   saveArrivalDraft,
@@ -20,6 +21,10 @@ export function useKennelOptions() {
 
 export function useVets() {
   return useQuery({ queryKey: queryKeys.vets, queryFn: listVets, staleTime: 5 * 60_000 });
+}
+
+export function useSpecies() {
+  return useQuery({ queryKey: queryKeys.species, queryFn: listSpecies, staleTime: 5 * 60_000 });
 }
 
 export function useCountries() {

@@ -23,7 +23,7 @@ import {
   type SegmentOption,
   type SelectOption,
 } from '@/components';
-import { SPECIES, SEXES, type ArrivalDetailsInput, type Sex, type Species } from '@/domain/types';
+import { SEXES, type ArrivalDetailsInput, type Sex } from '@/domain/types';
 import { useGoBack } from '@/navigation/useGoBack';
 import { theme } from '@/theme';
 import { formatDateInput } from '@/utils/dates';
@@ -35,13 +35,15 @@ import {
   useKennelOptions,
   useRegisterArrival,
   useSaveArrivalDraft,
+  useSpecies,
 } from './hooks';
 import { useAutosave } from './useAutosave';
 import { EMPTY_DETAILS, MICROCHIP_LENGTH, hasErrors, validateDetails, validateMicrochipFormat } from './validation';
 
 const TOTAL_STEPS = 2;
 
-const speciesOptions: readonly SegmentOption<Species>[] = SPECIES.map((value) => ({ value, label: value }));
+/** Up to this many species fit the segmented control (C3); more use a picker. */
+const MAX_SPECIES_SEGMENTS = 4;
 const sexOptions: readonly SegmentOption<Sex>[] = SEXES.map((value) => ({ value, label: value }));
 
 /** Screen 5: New Arrival, step 1 of 2. Officers only (contractors do not see New Arrival). */
@@ -71,6 +73,7 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
   const goBack = useGoBack('/');
   const kennels = useKennelOptions();
   const countries = useCountries();
+  const species = useSpecies();
   const saveDraft = useSaveArrivalDraft();
   const register = useRegisterArrival();
 
@@ -85,6 +88,9 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
 
   const errors = useMemo(() => validateDetails(details), [details]);
   const visible = showErrors ? errors : {};
+  // The species must be one of the current list (a restored draft may hold one that was since deactivated).
+  const speciesInvalid = !species.data?.includes(details.species);
+  const speciesError = showErrors && species.isSuccess && speciesInvalid ? 'Select a species.' : undefined;
   const chipError = visible.microchip ?? (chipTaken ? 'This microchip number is already registered to an active stay.' : undefined);
 
   const kennelOptions: SelectOption[] = (kennels.data ?? []).map((kennel) => ({
@@ -92,6 +98,7 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
     label: kennel.code,
     description: kennel.occupant ? `Currently: ${kennel.occupant}` : 'Empty',
   }));
+  const speciesOptions: SelectOption[] = (species.data ?? []).map((name) => ({ value: name, label: name }));
   const countryOptions: SelectOption[] = (countries.data ?? []).map((country) => ({
     value: country.code,
     label: country.name,
@@ -131,7 +138,7 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
 
   const handleContinue = async () => {
     setShowErrors(true);
-    if (hasErrors(errors)) return;
+    if (hasErrors(errors) || speciesInvalid) return;
     try {
       if (await checkMicrochip(details.microchip)) return;
     } catch (error) {
@@ -160,7 +167,7 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
     router.navigate('/arrival-exam');
   };
 
-  const errorCount = Object.keys(visible).length + (chipTaken && !visible.microchip ? 1 : 0);
+  const errorCount = Object.keys(visible).length + (chipTaken && !visible.microchip ? 1 : 0) + (speciesError ? 1 : 0);
   const draftLabel =
     autosave.status === 'saving'
       ? 'Saving…'
@@ -259,15 +266,31 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
             onRetry={() => void kennels.refetch()}
           />
 
-          <FormField label="Species" required>
-            <SegmentedControl
+          {species.isSuccess && speciesOptions.length <= MAX_SPECIES_SEGMENTS ? (
+            <FormField label="Species" required error={speciesError}>
+              <SegmentedControl
+                label="Species"
+                testID="arrival-species"
+                options={speciesOptions}
+                value={details.species}
+                onChange={(value) => update({ species: value })}
+              />
+            </FormField>
+          ) : (
+            <SelectField
               label="Species"
+              required
               testID="arrival-species"
+              placeholder="Select species"
               options={speciesOptions}
-              value={details.species}
-              onChange={(species) => update({ species })}
+              value={details.species || null}
+              onChange={(value) => update({ species: value })}
+              error={speciesError}
+              loading={species.isPending}
+              loadError={species.isError ? "Couldn't load species." : undefined}
+              onRetry={() => void species.refetch()}
             />
-          </FormField>
+          )}
 
           <SelectField
             label="Country of origin"
