@@ -1,4 +1,4 @@
-export type ArrivalErrorKind = 'microchip_taken' | 'incomplete';
+export type ArrivalErrorKind = 'microchip_taken' | 'incomplete' | 'already_registered' | 'upload_failed';
 
 export class ArrivalError extends Error {
   readonly kind: ArrivalErrorKind;

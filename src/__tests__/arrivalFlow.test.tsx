@@ -1,9 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
+import { Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ApiError } from '@/api';
 import { ToastProvider } from '@/components';
+import * as arrivalApi from '@/features/arrivals/arrivalApi';
 import { ArrivalExamScreen } from '@/features/arrivals/ArrivalExamScreen';
 import { saveArrivalDraft } from '@/features/arrivals/arrivalApi';
 import { NewArrivalScreen } from '@/features/arrivals/NewArrivalScreen';
@@ -28,6 +31,15 @@ jest.mock('expo-router', () => ({
     const { Text } = require('react-native') as typeof import('react-native');
     return <Text testID="redirect">{href}</Text>;
   },
+}));
+jest.mock('expo-image-picker', () => ({
+  requestCameraPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  requestMediaLibraryPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  launchCameraAsync: jest.fn(),
+  launchImageLibraryAsync: jest.fn(async () => ({
+    canceled: false,
+    assets: [{ uri: 'file:///eye.jpg', fileName: 'eye.jpg', mimeType: 'image/jpeg' }],
+  })),
 }));
 jest.mock('@/auth', () => ({
   useSession: () => ({
@@ -162,6 +174,21 @@ describe('New Arrival (wireframe 02)', () => {
     expect(mockDb.draft?.details).toMatchObject({ name: 'Nala', kennel: 'KC2-7', countryCode: 'JP', sex: 'Female' });
   });
 
+  it("shows the server's reason when a request on Continue is rejected", async () => {
+    const check = jest.spyOn(arrivalApi, 'isMicrochipTaken').mockRejectedValue(new ApiError(401, "JWT is missing the 'sub' claim."));
+    renderWithProviders(<NewArrivalScreen />);
+    fireEvent.changeText(await screen.findByTestId('arrival-name'), 'Nala');
+    await pickOption('arrival-kennel', 'KC2-7');
+    await pickOption('arrival-country', 'JP');
+    fireEvent.press(screen.getByTestId('arrival-sex-Female'));
+    fireEvent.changeText(screen.getByTestId('arrival-microchip'), '982000999999991');
+    fireEvent.changeText(screen.getByTestId('arrival-release'), '19012099');
+    fireEvent.press(screen.getByTestId('arrival-continue'));
+    expect(await screen.findByText("JWT is missing the 'sub' claim.")).toBeTruthy();
+    expect(mockRouter.navigate).not.toHaveBeenCalledWith('/arrival-exam');
+    check.mockRestore();
+  });
+
   it('saves the draft when leaving with Back', async () => {
     renderWithProviders(<NewArrivalScreen />);
     fireEvent.changeText(await screen.findByTestId('arrival-name'), 'Half done');
@@ -216,14 +243,23 @@ describe('Arrival Exam (wireframe 03)', () => {
     fireEvent.changeText(await screen.findByTestId('exam-weight'), '4.2');
     fireEvent.press(screen.getByTestId('exam-eyes-toggle-abnormal'));
     fireEvent.changeText(screen.getByTestId('exam-eyes-note'), 'Mild discharge, left eye');
+    // The officer picks "Choose from library" in the Add photo sheet.
+    const sheet = jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+      buttons?.find((b) => b.text === 'Choose from library')?.onPress?.();
+    });
     fireEvent.press(screen.getByTestId('exam-eyes-add-photo'));
-    expect(screen.getByLabelText('Remove photo 1 from Eyes')).toBeTruthy();
+    expect(await screen.findByLabelText('Remove photo 1 from Eyes')).toBeTruthy();
+    sheet.mockRestore();
 
     fireEvent.press(screen.getByTestId('exam-complete'));
     await waitFor(() => expect(mockRouter.navigate).toHaveBeenCalledWith('/'));
 
     expect(mockDb.animals).toHaveLength(9);
-    expect(mockDb.exams.at(-1)?.findings.eyes).toMatchObject({ abnormal: true, note: 'Mild discharge, left eye' });
+    expect(mockDb.exams.at(-1)?.findings.eyes).toMatchObject({
+      abnormal: true,
+      note: 'Mild discharge, left eye',
+      photos: [expect.objectContaining({ uri: 'file:///eye.jpg', mimeType: 'image/jpeg' })],
+    });
     expect(mockDb.draft).toBeNull();
     expect(await screen.findByTestId('toast')).toHaveTextContent(/Nala is now under active monitoring in KC2-7/);
     // Operations data was invalidated so the new animal is counted.

@@ -31,7 +31,14 @@
       "expo-router",
       "expo-secure-store",
       "expo-web-browser",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow AQC Animal Health to attach photos of exam findings.",
+          "cameraPermission": "Allow AQC Animal Health to take photos of exam findings."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

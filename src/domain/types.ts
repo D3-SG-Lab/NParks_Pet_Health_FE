@@ -410,6 +410,10 @@ export interface AppNotification {
 /** Mock attachment shown as a placeholder tile. Real uploads follow FE-011 (SAS URL upload). */
 export interface ExamPhoto {
   id: string;
+  /** The picked or captured image on this device (absent for demo placeholders). */
+  uri?: string;
+  fileName?: string;
+  mimeType?: string;
 }
 
 export interface ExamFinding {
@@ -442,6 +446,11 @@ export interface ArrivalDraft {
   details: ArrivalDetailsInput;
   exam: ArrivalExamInput | null;
   updatedAt: number;
+  /**
+   * With the backend on: the stay registered when step 1 was completed (POST /animals), and the details
+   * it was registered with. The exam is saved against it.
+   */
+  registeredStay?: { id: string; details: ArrivalDetailsInput } | null;
 }
 
 export interface ArrivalExamRecord extends ArrivalExamInput {
