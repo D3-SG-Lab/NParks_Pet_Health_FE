@@ -9,6 +9,7 @@ import {
   listCountries,
   listKennelOptions,
   listVets,
+  registerArrival,
   saveArrivalDraft,
   type ArrivalDraftPatch,
 } from './arrivalApi';
@@ -39,6 +40,22 @@ export function useSaveArrivalDraft() {
   return useMutation({
     mutationFn: (patch: ArrivalDraftPatch) => saveArrivalDraft(patch),
     onSuccess: (draft: ArrivalDraft) => client.setQueryData(queryKeys.arrivalDraft, draft),
+  });
+}
+
+/** Completes step 1: with the API on, registers the stay, which then shows in animal lists (exam due). */
+export function useRegisterArrival() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: registerArrival,
+    onSuccess: async (draft) => {
+      client.setQueryData(queryKeys.arrivalDraft, draft);
+      await Promise.all([
+        client.invalidateQueries({ queryKey: queryKeys.operations }),
+        client.invalidateQueries({ queryKey: queryKeys.animals }),
+        client.invalidateQueries({ queryKey: queryKeys.kennels }),
+      ]);
+    },
   });
 }
 

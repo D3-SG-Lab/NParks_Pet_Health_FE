@@ -1,17 +1,20 @@
 /**
  * Arrival endpoints on the real backend (used by arrivalApi.ts when EXPO_PUBLIC_API_URL is set).
  *
- * Integrated: GET /kennels, GET /countries, GET /animals (kennel occupants, microchip check),
- * POST /animals (create the stay), POST /animals/{stayId}/exam, GET / DELETE /arrival-draft and
- * PUT /arrival-draft/exam.
+ * Integrated: GET /kennels, GET /countries, GET /master-data/vet-specialisations (the vet picker),
+ * POST /media/presign + PUT to the returned URL (exam photos), GET /animals (kennel occupants, microchip check),
+ * POST /animals (register the stay, on completing step 1), POST /animals/{stayId}/exam (step 2),
+ * GET / DELETE /arrival-draft and PUT /arrival-draft/exam.
  *
  * Gaps in the backend, handled here until they exist:
  * - No endpoint saves the animal-details half of the draft, so it is kept on the device; the exam half
  *   is mirrored to PUT /arrival-draft/exam.
- * - No endpoint lists AQC vets, so the vet picker stays on demo data and vetStaffId is sent only when the
- *   picked id is numeric (a real staff id).
+ * - No endpoint lists AQC vets. As agreed, the vet picker lists GET /master-data/vet-specialisations
+ *   (active only) and sends the picked entry's id as vetStaffId; the backend must accept those ids.
  * - POST /animals has no releaseDate, so the expected release date is not sent.
- * - Exam photos are placeholders until the media upload API exists, so photoKeys is always empty.
+ * - There is no endpoint to edit a stay's details, so once registered they can't change (arrivalApi.ts).
+ * - Exam photos of abnormal findings are uploaded when the exam is completed: presigned (5 per request),
+ *   PUT to object storage, and their media keys sent as photoKeys.
  */
 import { ApiError, unwrap } from '@/api';
 import {
@@ -20,8 +23,10 @@ import {
   getApiV1ArrivalDraft,
   getApiV1Countries,
   getApiV1Kennels,
+  getApiV1MasterDataVetSpecialisations,
   postApiV1Animals,
   postApiV1AnimalsByStayIdExam,
+  postApiV1MediaPresign,
   putApiV1ArrivalDraftExam,
 } from '@/api/generated';
 import type { AnimalStayResponse, ArrivalExamFindingInput, ArrivalExamResponse, AqcKennelResponse } from '@/api/generated';
@@ -37,7 +42,9 @@ import {
   type ArrivalExamRecord,
   type Country,
   type ExamFinding,
+  type ExamPhoto,
   type ExamSystem,
+  type Vet,
 } from '@/domain/types';
 import { parseDdMmYyyy, todayIso } from '@/utils/dates';
 
@@ -65,6 +72,12 @@ export async function listKennelOptions(): Promise<KennelOptionShape[]> {
 export async function listCountries(): Promise<Country[]> {
   const countries = await unwrap(getApiV1Countries({ query: { isActive: true } }));
   return countries.map(({ code, name }) => ({ code, name }));
+}
+
+/** The vet picker: active entries of GET /master-data/vet-specialisations, by name. */
+export async function listVets(): Promise<Vet[]> {
+  const entries = await unwrap(getApiV1MasterDataVetSpecialisations({ query: { isActive: true } }));
+  return entries.map(({ id, name }) => ({ id: String(id), name })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function isMicrochipTaken(microchip: string): Promise<boolean> {
@@ -162,11 +175,83 @@ function toStaffId(vetId: string | null): number | null {
   return vetId && /^\d+$/.test(vetId) ? Number(vetId) : null;
 }
 
-function toFindings(exam: ArrivalExamInput): ArrivalExamFindingInput[] {
+function toFindings(exam: ArrivalExamInput, photoKeys: Partial<Record<ExamSystem, string[]>> = {}): ArrivalExamFindingInput[] {
   return EXAM_SYSTEMS.map((system) => {
     const finding = exam.findings[system];
-    return { system, abnormal: finding.abnormal, note: finding.note.trim() || null, photoKeys: [] };
+    return { system, abnormal: finding.abnormal, note: finding.note.trim() || null, photoKeys: photoKeys[system] ?? [] };
   });
+}
+
+// --- Exam photos ------------------------------------------------------------------------------------
+
+/** POST /media/presign accepts at most this many items per request. */
+const PRESIGN_BATCH = 5;
+
+/** Media keys of photos already uploaded (by photo id), so a retried submit doesn't upload them again. */
+const uploadedKeys = new Map<string, string>();
+
+const MIME_BY_EXTENSION: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', heic: 'image/heic' };
+
+function contentTypeOf(photo: ExamPhoto): string {
+  if (photo.mimeType?.startsWith('image/')) return photo.mimeType;
+  const name = photo.fileName ?? photo.uri?.split(/[?#]/)[0] ?? '';
+  const extension = name.split('.').pop()?.toLowerCase() ?? '';
+  return MIME_BY_EXTENSION[extension] ?? 'image/jpeg';
+}
+
+function fileNameOf(photo: ExamPhoto): string {
+  if (photo.fileName) return photo.fileName;
+  const extension = Object.entries(MIME_BY_EXTENSION).find(([, mime]) => mime === contentTypeOf(photo))?.[0] ?? 'jpg';
+  return `${photo.id}.${extension}`;
+}
+
+async function uploadTo(uploadUrl: string, photo: ExamPhoto & { uri: string }): Promise<void> {
+  let body: Blob;
+  try {
+    body = await (await fetch(photo.uri)).blob();
+  } catch {
+    throw new ArrivalError('upload_failed', "A photo couldn't be read from this device. Remove it and add it again.");
+  }
+  let response: Response;
+  try {
+    response = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentTypeOf(photo) }, body });
+  } catch {
+    throw new ArrivalError('upload_failed', "Photos couldn't be uploaded: the photo storage can't be reached. Remove the photos or try again later.");
+  }
+  if (!response.ok) {
+    throw new ArrivalError('upload_failed', `Photos couldn't be uploaded (storage error ${response.status}). Remove the photos or try again.`);
+  }
+}
+
+/** Uploads the photos of abnormal findings and returns their media keys by system. */
+export async function uploadExamPhotos(exam: ArrivalExamInput): Promise<Partial<Record<ExamSystem, string[]>>> {
+  const photos = EXAM_SYSTEMS.flatMap((system) =>
+    exam.findings[system].abnormal
+      ? exam.findings[system].photos.flatMap((photo) => (photo.uri ? [{ system, photo: { ...photo, uri: photo.uri } }] : []))
+      : [],
+  );
+  const pending = photos.filter(({ photo }) => !uploadedKeys.has(photo.id));
+  for (let start = 0; start < pending.length; start += PRESIGN_BATCH) {
+    const batch = pending.slice(start, start + PRESIGN_BATCH);
+    const { items } = await unwrap(
+      postApiV1MediaPresign({
+        body: {
+          items: batch.map(({ photo }) => ({ mediaKind: 'photo', context: 'exam', filename: fileNameOf(photo), contentType: contentTypeOf(photo) })),
+        },
+      }),
+    );
+    await Promise.all(
+      batch.map(async ({ photo }, index) => {
+        const target = items[index];
+        if (!target) throw new ArrivalError('upload_failed', "Photos couldn't be uploaded. Please try again.");
+        await uploadTo(target.uploadUrl, photo);
+        uploadedKeys.set(photo.id, target.mediaKey);
+      }),
+    );
+  }
+  const keys: Partial<Record<ExamSystem, string[]>> = {};
+  for (const { system, photo } of photos) keys[system] = [...(keys[system] ?? []), uploadedKeys.get(photo.id) as string];
+  return keys;
 }
 
 /** The app's exam record for GET /animals/{stayId}/exam (also shown on the animal's timeline). */
@@ -194,52 +279,46 @@ export function toAnimal(stay: AnimalStayResponse, examDone = true): Animal {
 }
 
 /**
- * Stays created on the server whose exam has not gone through yet, by microchip. A retry after a failed
- * exam submit reuses the stay instead of hitting "microchip already registered".
+ * Registers the arrival (POST /animals) when step 1 is completed. The stay starts with its arrival exam
+ * due; step 2 saves the exam against it (submitExam).
  */
-const pendingStays = new Map<string, AnimalStayResponse>();
-
-/** Creates the stay (POST /animals), then its baseline exam (POST /animals/{stayId}/exam). */
-export async function completeArrival(details: ArrivalDetailsInput, exam: ArrivalExamInput): Promise<AnimalStayResponse> {
-  const microchip = details.microchip.trim();
-  let stay = pendingStays.get(microchip);
-  if (!stay) {
-    const kennel: AqcKennelResponse | undefined = (await listKennels()).find((k) => k.code === details.kennel);
-    if (!kennel) throw new ArrivalError('incomplete', `Kennel ${details.kennel} is no longer available. Pick another kennel.`);
-    try {
-      stay = await unwrap(
-        postApiV1Animals({
-          body: {
-            name: details.name.trim(),
-            kennelId: kennel.id,
-            species: details.species,
-            sex: details.sex,
-            countryCode: details.countryCode,
-            microchip,
-            dateOfBirth: parseDdMmYyyy(details.dateOfBirth)?.iso ?? null,
-            arrivalDate: todayIso(),
-          },
-        }),
-      );
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 409) throw new ArrivalError('microchip_taken', error.message);
-      throw error;
-    }
-    pendingStays.set(microchip, stay);
+export async function registerStay(details: ArrivalDetailsInput): Promise<AnimalStayResponse> {
+  const kennel: AqcKennelResponse | undefined = (await listKennels()).find((k) => k.code === details.kennel);
+  if (!kennel) throw new ArrivalError('incomplete', `Kennel ${details.kennel} is no longer available. Pick another kennel.`);
+  try {
+    return await unwrap(
+      postApiV1Animals({
+        body: {
+          name: details.name.trim(),
+          kennelId: kennel.id,
+          species: details.species,
+          sex: details.sex,
+          countryCode: details.countryCode,
+          microchip: details.microchip.trim(),
+          dateOfBirth: parseDdMmYyyy(details.dateOfBirth)?.iso ?? null,
+          arrivalDate: todayIso(),
+        },
+      }),
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 409) throw new ArrivalError('microchip_taken', error.message);
+    throw error;
   }
+}
 
+/** Uploads the exam photos, then saves the stay's baseline exam (POST /animals/{stayId}/exam). */
+export async function submitExam(stayId: string, exam: ArrivalExamInput): Promise<void> {
+  const photoKeys = await uploadExamPhotos(exam);
   const { vetStaffId, weightKg } = toExamDraftBody(exam);
   try {
     await unwrap(
       postApiV1AnimalsByStayIdExam({
-        path: { stayId: Number(stay.id) },
-        body: { vetStaffId, weightKg, mentation: exam.mentation, findings: toFindings(exam) },
+        path: { stayId: Number(stayId) },
+        body: { vetStaffId, weightKg, mentation: exam.mentation, findings: toFindings(exam, photoKeys) },
       }),
     );
   } catch (error) {
     // 409: the exam was already saved by an earlier attempt whose response was lost.
     if (!(error instanceof ApiError && error.status === 409)) throw error;
   }
-  pendingStays.delete(microchip);
-  return stay;
 }

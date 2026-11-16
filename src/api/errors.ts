@@ -70,6 +70,14 @@ export async function unwrap<T>(call: Promise<ClientResult<T>>): Promise<T> {
   throw new ApiError(status, errorMessage(error, status), kind, field);
 }
 
+/**
+ * The message to show for a failed request: the server's reason when it rejected it (4xx, e.g. an
+ * expired or invalid token), "couldn't reach the server" when it never got there, else `fallback`.
+ */
+export function failureMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError && (error.rejected || error.status === 0) ? error.message : fallback;
+}
+
 /** The message to show for a failed save: the server's reason when it rejected the request, else `fallback`. */
 export function rejectionMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError && error.rejected ? error.message : fallback;

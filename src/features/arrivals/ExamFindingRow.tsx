@@ -18,7 +18,7 @@ interface ExamFindingRowProps {
   onChange: (next: ExamFinding) => void;
   /** Validation message for the required note. */
   noteError?: string;
-  /** Adds a mock photo attachment. Real capture and upload follow FE-011 and FE-024. */
+  /** Opens the camera or photo library (photos upload when the exam is completed). */
   onAddPhoto: () => void;
   /** Hairline above the row (all but the first). */
   divider?: boolean;
@@ -67,7 +67,7 @@ export function ExamFindingRow({ label, finding, onChange, noteError, onAddPhoto
           <View style={styles.photos}>
             {finding.photos.map((photo, index) => (
               <View key={photo.id}>
-                <MediaThumb kind="photo" size="md" accessibilityLabel={`Photo ${index + 1} of ${label}`} />
+                <MediaThumb kind="photo" size="md" uri={photo.uri} accessibilityLabel={`Photo ${index + 1} of ${label}`} />
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Remove photo ${index + 1} from ${label}`}

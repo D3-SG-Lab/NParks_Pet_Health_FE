@@ -55,4 +55,4 @@ client.interceptors.request.use(async (request) => {
   return request;
 });
 
-export { ApiError, rejectionMessage, unwrap } from './errors';
+export { ApiError, failureMessage, rejectionMessage, unwrap } from './errors';

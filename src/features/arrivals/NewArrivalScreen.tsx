@@ -2,6 +2,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { failureMessage } from '@/api';
 import { useSession } from '@/auth';
 import {
   AppText,
@@ -27,11 +28,12 @@ import { useGoBack } from '@/navigation/useGoBack';
 import { theme } from '@/theme';
 import { formatDateInput } from '@/utils/dates';
 
-import { isMicrochipTaken } from './arrivalApi';
+import { ArrivalError, isMicrochipTaken } from './arrivalApi';
 import {
   useArrivalDraft,
   useCountries,
   useKennelOptions,
+  useRegisterArrival,
   useSaveArrivalDraft,
 } from './hooks';
 import { useAutosave } from './useAutosave';
@@ -70,6 +72,7 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
   const kennels = useKennelOptions();
   const countries = useCountries();
   const saveDraft = useSaveArrivalDraft();
+  const register = useRegisterArrival();
 
   const [details, setDetails] = useState<ArrivalDetailsInput>(initial);
   const [dirty, setDirty] = useState(false);
@@ -129,13 +132,32 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
   const handleContinue = async () => {
     setShowErrors(true);
     if (hasErrors(errors)) return;
-    if (await checkMicrochip(details.microchip)) return;
+    try {
+      if (await checkMicrochip(details.microchip)) return;
+    } catch (error) {
+      toast.show(failureMessage(error, "Couldn't check the microchip number. Please try again."), 'error');
+      return;
+    }
     try {
       await autosave.flush();
-      router.navigate('/arrival-exam');
     } catch {
       toast.show("Couldn't save the draft. Please try again.", 'error');
+      return;
     }
+    // With the backend on, this registers the stay (POST /animals); the exam is then saved against it.
+    try {
+      await register.mutateAsync(details);
+    } catch (error) {
+      if (error instanceof ArrivalError && error.kind === 'microchip_taken') {
+        checkedChip.current = details.microchip;
+        setChipTaken(true);
+        return;
+      }
+      const message = error instanceof ArrivalError ? error.message : failureMessage(error, "Couldn't register the arrival. Please try again.");
+      toast.show(message, 'error');
+      return;
+    }
+    router.navigate('/arrival-exam');
   };
 
   const errorCount = Object.keys(visible).length + (chipTaken && !visible.microchip ? 1 : 0);
@@ -177,8 +199,8 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
           <Button
             label="Continue to arrival exam"
             testID="arrival-continue"
-            loading={checking}
-            loadingLabel="Checking microchip"
+            loading={checking || register.isPending}
+            loadingLabel={checking ? 'Checking microchip' : 'Registering arrival'}
             onPress={() => void handleContinue()}
           />
           {errorCount > 0 ? (
@@ -276,7 +298,8 @@ function NewArrivalForm({ initial, restoredFrom }: NewArrivalFormProps) {
               checkedChip.current = null;
               update({ microchip: text.replace(/\D/g, '') });
             }}
-            onBlur={() => void checkMicrochip(details.microchip)}
+            // A failed check here is retried, and reported, on Continue.
+            onBlur={() => void checkMicrochip(details.microchip).catch(() => {})}
             error={chipError}
             helper="Must be unique across active stays."
             accessory={

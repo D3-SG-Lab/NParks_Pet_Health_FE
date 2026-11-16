@@ -2,7 +2,15 @@ import { errorMessage } from '@/api/errors';
 import * as sdk from '@/api/generated';
 import type { AnimalStayResponse } from '@/api/generated';
 import type { ArrivalDetailsInput } from '@/domain/types';
-import { ArrivalError, completeArrival, getArrivalDraft, isMicrochipTaken, listKennelOptions } from '@/features/arrivals/arrivalApi';
+import {
+  ArrivalError,
+  completeArrival,
+  getArrivalDraft,
+  isMicrochipTaken,
+  listKennelOptions,
+  listVets,
+  registerArrival,
+} from '@/features/arrivals/arrivalApi';
 import { createEmptyExam } from '@/features/arrivals/validation';
 import { mockDb, resetMockDb } from '@/mock/db';
 
@@ -17,6 +25,8 @@ jest.mock('@/api/generated', () => ({
   getApiV1ArrivalDraft: jest.fn(),
   putApiV1ArrivalDraftExam: jest.fn(),
   deleteApiV1ArrivalDraft: jest.fn(),
+  getApiV1MasterDataVetSpecialisations: jest.fn(),
+  postApiV1MediaPresign: jest.fn(),
 }));
 
 const api = sdk as jest.Mocked<typeof sdk>;
@@ -126,6 +136,126 @@ describe('arrivals on the backend API', () => {
     await completeArrival(input);
     expect(api.postApiV1Animals).toHaveBeenCalledTimes(1);
     expect(api.postApiV1AnimalsByStayIdExam).toHaveBeenCalledTimes(2);
+  });
+
+  it('registers the stay on completing step 1, then saves only the exam in step 2', async () => {
+    api.postApiV1Animals.mockImplementation(() => ok(stay, 201));
+    api.postApiV1AnimalsByStayIdExam.mockImplementation(() => ok({}, 201));
+
+    const draft = await registerArrival(details);
+    expect(api.postApiV1Animals).toHaveBeenCalledTimes(1);
+    expect(draft?.registeredStay?.id).toBe('41');
+    expect(mockDb.animals.find((a) => a.id === '41')?.today.arrivalExam).toBe('due');
+
+    // Back to step 1 and on again with the same details: no second stay, and its own microchip isn't "taken".
+    await registerArrival({ ...details, releaseDate: '01/12/2026' });
+    expect(api.postApiV1Animals).toHaveBeenCalledTimes(1);
+    expect(await isMicrochipTaken(details.microchip)).toBe(false);
+    expect(api.getApiV1Animals).not.toHaveBeenCalled();
+
+    const animal = await completeArrival({ details, exam: createEmptyExam() });
+    expect(api.postApiV1Animals).toHaveBeenCalledTimes(1);
+    expect(api.postApiV1AnimalsByStayIdExam.mock.calls[0]?.[0].path).toEqual({ stayId: 41 });
+    expect(animal).toMatchObject({ id: '41', today: { arrivalExam: 'done' } });
+    expect(mockDb.draft).toBeNull();
+  });
+
+  it('refuses changed details once the stay is registered (no edit endpoint)', async () => {
+    api.postApiV1Animals.mockImplementation(() => ok(stay, 201));
+    await registerArrival(details);
+    const error = await registerArrival({ ...details, kennel: 'K-01' }).catch((e: unknown) => e);
+    expect(error).toMatchObject({ kind: 'already_registered' });
+    expect(api.postApiV1Animals).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a microchip conflict when registering step 1', async () => {
+    api.postApiV1Animals.mockImplementation(() => fail(409, { error: 'An active stay already exists for this microchip.' }));
+    await expect(registerArrival(details)).rejects.toMatchObject({ kind: 'microchip_taken' });
+    expect(mockDb.draft?.registeredStay ?? null).toBeNull();
+  });
+
+  it('lists vets from the active vet specialisations', async () => {
+    api.getApiV1MasterDataVetSpecialisations.mockImplementation(() =>
+      ok([
+        { id: 3, name: 'Yamada', isActive: true, createdAt: '', updatedAt: '' },
+        { id: 1, name: 'Surgery', isActive: true, createdAt: '', updatedAt: '' },
+      ]),
+    );
+    expect(await listVets()).toEqual([
+      { id: '1', name: 'Surgery' },
+      { id: '3', name: 'Yamada' },
+    ]);
+    expect(api.getApiV1MasterDataVetSpecialisations).toHaveBeenCalledWith({ query: { isActive: true } });
+  });
+
+  describe('exam photos', () => {
+    const realFetch = global.fetch;
+    afterEach(() => {
+      global.fetch = realFetch;
+    });
+
+    function examWithPhotos() {
+      const exam = { ...createEmptyExam(), vetId: '3', weightKg: '4.2' };
+      exam.findings.eyes = {
+        abnormal: true,
+        note: 'Discharge',
+        photos: [
+          { id: 'ph-1', uri: 'file:///eye1.jpg', fileName: 'eye1.jpg', mimeType: 'image/jpeg' },
+          { id: 'ph-2', uri: 'file:///eye2.png' },
+        ],
+      };
+      // Photos of a finding switched back to Normal are not sent.
+      exam.findings.ears = { abnormal: false, note: '', photos: [{ id: 'ph-3', uri: 'file:///ear.jpg' }] };
+      return exam;
+    }
+
+    it('presigns, uploads and sends the media keys with the exam', async () => {
+      api.postApiV1Animals.mockImplementation(() => ok(stay, 201));
+      api.postApiV1AnimalsByStayIdExam.mockImplementation(() => ok({}, 201));
+      api.postApiV1MediaPresign.mockImplementation(() =>
+        ok({
+          items: [
+            { mediaKey: 'uploads/exam/a.jpg', uploadUrl: 'https://storage.test/a', expiresAt: '' },
+            { mediaKey: 'uploads/exam/b.png', uploadUrl: 'https://storage.test/b', expiresAt: '' },
+          ],
+        }),
+      );
+      const fetchMock = jest.fn(async (url: string) => (url.startsWith('file:') ? { blob: async () => new Blob(['x']) } : { ok: true, status: 200 }));
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      await completeArrival({ details: { ...details, microchip: '982000999999994' }, exam: examWithPhotos() });
+
+      expect(api.postApiV1MediaPresign).toHaveBeenCalledWith({
+        body: {
+          items: [
+            { mediaKind: 'photo', context: 'exam', filename: 'eye1.jpg', contentType: 'image/jpeg' },
+            { mediaKind: 'photo', context: 'exam', filename: 'ph-2.png', contentType: 'image/png' },
+          ],
+        },
+      });
+      expect(fetchMock).toHaveBeenCalledWith('https://storage.test/a', expect.objectContaining({ method: 'PUT' }));
+      const findings = api.postApiV1AnimalsByStayIdExam.mock.calls[0]?.[0].body.findings;
+      expect(findings).toContainEqual({ system: 'eyes', abnormal: true, note: 'Discharge', photoKeys: ['uploads/exam/a.jpg', 'uploads/exam/b.png'] });
+      expect(findings).toContainEqual({ system: 'ears', abnormal: false, note: null, photoKeys: [] });
+      expect(api.postApiV1AnimalsByStayIdExam.mock.calls[0]?.[0].body.vetStaffId).toBe(3);
+    });
+
+    it('stops with a clear error when the photo storage is unreachable', async () => {
+      api.postApiV1Animals.mockImplementation(() => ok(stay, 201));
+      api.postApiV1MediaPresign.mockImplementation(() =>
+        ok({ items: [1, 2].map((n) => ({ mediaKey: `k${n}`, uploadUrl: `https://minio_endpoint/${n}`, expiresAt: '' })) }),
+      );
+      global.fetch = jest.fn(async (url: string) => {
+        if (url.startsWith('file:')) return { blob: async () => new Blob(['x']) };
+        throw new TypeError('Network request failed');
+      }) as unknown as typeof fetch;
+
+      const exam = examWithPhotos();
+      exam.findings.eyes.photos = exam.findings.eyes.photos.map((p) => ({ ...p, id: `${p.id}-unreachable` }));
+      const error = await completeArrival({ details: { ...details, microchip: '982000999999995' }, exam }).catch((e: unknown) => e);
+      expect(error).toMatchObject({ kind: 'upload_failed', message: expect.stringMatching(/storage can't be reached/) });
+      expect(api.postApiV1AnimalsByStayIdExam).not.toHaveBeenCalled();
+    });
   });
 
   it('treats a failed draft load as no draft', async () => {

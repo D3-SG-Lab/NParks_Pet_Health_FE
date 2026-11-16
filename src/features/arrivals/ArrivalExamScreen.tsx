@@ -39,13 +39,16 @@ import {
 import { useGoBack } from '@/navigation/useGoBack';
 import { theme } from '@/theme';
 
-import { ArrivalError, createMockPhoto } from './arrivalApi';
+import { ArrivalError } from './arrivalApi';
 import { ExamFindingRow } from './ExamFindingRow';
 import { useArrivalDraft, useCompleteArrival, useSaveArrivalDraft, useVets } from './hooks';
+import { choosePhotoSource, PhotoPermissionError, pickPhotos } from './photoPicker';
 import { useAutosave } from './useAutosave';
 import { createEmptyExam, hasErrors, validateDetails, validateExam } from './validation';
 
-const TOTAL_STEPS = 2;const mentationOptions: readonly SegmentOption<Mentation>[] = MENTATIONS.map((value) => ({ value, label: value }));
+const TOTAL_STEPS = 2;
+/** Photos added at once (the upload API presigns up to 5 per request). */
+const MAX_PHOTOS_PER_PICK = 5;const mentationOptions: readonly SegmentOption<Mentation>[] = MENTATIONS.map((value) => ({ value, label: value }));
 
 /** Wireframe 03: Arrival Exam, step 2 of 2. Officers only. */
 export function ArrivalExamScreen() {
@@ -129,9 +132,21 @@ function ExamForm({ details, initial }: ExamFormProps) {
   const updateFinding = (system: ExamSystem, finding: ExamFinding) =>
     update({ findings: { ...exam.findings, [system]: finding } });
 
-  const addPhoto = (system: ExamSystem) => {
-    const finding = exam.findings[system];
-    updateFinding(system, { ...finding, photos: [...finding.photos, createMockPhoto()] });
+  const addPhoto = async (system: ExamSystem) => {
+    try {
+      const source = await choosePhotoSource();
+      if (!source) return;
+      const photos = await pickPhotos(source, MAX_PHOTOS_PER_PICK);
+      if (photos.length === 0) return;
+      // Functional update: the exam may have changed while the picker was open.
+      setDirty(true);
+      setExam((current) => {
+        const finding = current.findings[system];
+        return { ...current, findings: { ...current.findings, [system]: { ...finding, photos: [...finding.photos, ...photos] } } };
+      });
+    } catch (error) {
+      toast.show(error instanceof PhotoPermissionError ? error.message : "Couldn't open the photos. Please try again.", 'error');
+    }
   };
 
   const handleComplete = async () => {
@@ -249,7 +264,7 @@ function ExamForm({ details, initial }: ExamFormProps) {
               finding={exam.findings[system]}
               noteError={visible[`note:${system}`]}
               onChange={(finding) => updateFinding(system, finding)}
-              onAddPhoto={() => addPhoto(system)}
+              onAddPhoto={() => void addPhoto(system)}
             />
           ))}
         </Card>

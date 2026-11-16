@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View, type DimensionValue } from 'react-native';
+import { Image, StyleSheet, View, type DimensionValue } from 'react-native';
 
 import { focusRing, theme } from '@/theme';
 
@@ -19,6 +19,8 @@ interface MediaThumbProps {
   selected?: boolean;
   /** Dark style for the evidence viewer. */
   dark?: boolean;
+  /** The image to show (a local file); without it, a placeholder icon. */
+  uri?: string;
   /** Content drawn over the tile (upload status). */
   overlay?: ReactNode;
   onPress?: () => void;
@@ -42,6 +44,7 @@ export function MediaThumb({
   selected = false,
   dark = false,
   overlay,
+  uri,
   onPress,
   accessibilityLabel,
   testID,
@@ -51,7 +54,9 @@ export function MediaThumb({
   const iconColor = video || dark ? theme.colors.inverse : theme.colors.text3;
   const inner = (
     <>
-      {moreCount ? (
+      {uri && !moreCount ? (
+        <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityIgnoresInvertColors />
+      ) : moreCount ? (
         <AppText variant="titleS" style={{ color: iconColor }}>{`+${moreCount}`}</AppText>
       ) : (
         <Icon name={video ? 'play' : 'image-outline'} size={size === 'sm' ? 'sm' : 'md'} color={iconColor} />
