@@ -1,5 +1,5 @@
 /**
- * Animals from the backend: GET /animals?status=staying, GET /animals/{id}, GET /animals/{id}/exam, plus
+ * Animals from the backend: GET /animals?status=active-monitoring, GET /animals/{id}, GET /animals/{id}/exam, plus
  * each animal's inspections (GET /animals/{id}/inspections) so the inspection board and today's AM/PM
  * status come from the server. The animal profile also loads the animal's observations and today's
  * medication (loadAnimalRecords).
@@ -13,7 +13,7 @@ import { ApiError, isApiEnabled, unwrap } from '@/api';
 import { getApiV1Animals, getApiV1AnimalsById, getApiV1AnimalsByStayIdExam } from '@/api/generated';
 import type { AnimalStayResponse } from '@/api/generated';
 import type { Animal } from '@/domain/types';
-import { toAnimal, toExamRecord } from '@/features/arrivals/arrivalBackend';
+import { ACTIVE_STAY_STATUS, toAnimal, toExamRecord } from '@/features/arrivals/arrivalBackend';
 import { loadInspections } from '@/features/inspections/inspectionBackend';
 import { getDay } from '@/features/medication/medicationBackend';
 import { loadObservations } from '@/features/observations/observationBackend';
@@ -23,6 +23,19 @@ import { isoDateOf } from '@/utils/dates';
 
 /** Several screens load at once; within this window they share one fetch. */
 const FRESH_MS = 3_000;
+
+/**
+ * Per-animal details (inspections, observations, medication) are extras: when the server fails one,
+ * the animal is still listed without it, rather than the whole list failing. Logged in development.
+ */
+async function optional<T>(load: Promise<T>, fallback: T, what: string): Promise<T> {
+  try {
+    return await load;
+  } catch (error) {
+    if (__DEV__) console.warn(`Animals: couldn't load ${what}; showing the animal without it.`, error);
+    return fallback;
+  }
+}
 
 let inFlight: Promise<void> | null = null;
 let syncedAt = 0;
@@ -43,7 +56,10 @@ async function loadExam(animalId: string): Promise<boolean> {
 async function toStoredAnimal(stay: AnimalStayResponse): Promise<Animal> {
   const id = String(stay.id);
   const known = mockDb.animals.find((a) => a.id === id);
-  const [examDone, inspections] = await Promise.all([known?.today.arrivalExam === 'done' || loadExam(id), loadInspections(id)]);
+  const [examDone, inspections] = await Promise.all([
+    known?.today.arrivalExam === 'done' || optional(loadExam(id), false, `the arrival exam of animal ${id}`),
+    optional(loadInspections(id), [], `the inspections of animal ${id}`),
+  ]);
   const today = isoDateOf(Date.now());
   const done = (session: 'AM' | 'PM') => (inspections.some((i) => i.date === today && i.session === session) ? 'done' : 'due');
   const animal = toAnimal(stay, examDone);
@@ -51,13 +67,13 @@ async function toStoredAnimal(stay: AnimalStayResponse): Promise<Animal> {
 }
 
 async function sync(): Promise<void> {
-  const stays = await unwrap(getApiV1Animals({ query: { status: 'staying' } }));
+  const stays = await unwrap(getApiV1Animals({ query: { status: ACTIVE_STAY_STATUS } }));
   const fromBackend = await Promise.all(stays.map(toStoredAnimal));
   mockDb.animals = [...mockDb.animals.filter((a) => !isBackendId(a.id)), ...fromBackend];
   syncedAt = Date.now();
 }
 
-/** Refreshes the store's animals from the backend (staying animals only). */
+/** Refreshes the store's animals from the backend (active-monitoring stays only). */
 export function syncAnimals(): Promise<void> {
   if (!isApiEnabled()) return Promise.resolve();
   if (inFlight) return inFlight;
@@ -75,7 +91,7 @@ export async function ensureAnimal(animalId: string): Promise<boolean> {
   try {
     const stay = await unwrap(getApiV1AnimalsById({ path: { id: Number(animalId) } }));
     // Released and deceased stays are not shown: the app only has an active-monitoring status.
-    if (stay.status !== 'staying') return false;
+    if (stay.status !== ACTIVE_STAY_STATUS) return false;
     mockDb.animals.push(await toStoredAnimal(stay));
     return true;
   } catch (error) {
@@ -86,15 +102,13 @@ export async function ensureAnimal(animalId: string): Promise<boolean> {
 
 /**
  * Loads a backend animal's observations and today's medication into the store, for its profile and
- * timeline. Servers without the medication endpoints answer 404, which leaves the animal without doses.
+ * timeline. Either failing (e.g. a server without the medication endpoints) leaves the profile without it.
  */
 export async function loadAnimalRecords(animalId: string, now: number = Date.now()): Promise<void> {
   if (!isApiEnabled() || !isBackendId(animalId)) return;
   await Promise.all([
-    loadObservations(animalId),
-    getDay(animalId, isoDateOf(now)).catch((error: unknown) => {
-      if (!(error instanceof ApiError && error.status === 404)) throw error;
-    }),
+    optional(loadObservations(animalId), undefined, `the observations of animal ${animalId}`),
+    optional(getDay(animalId, isoDateOf(now)), undefined, `today's medication of animal ${animalId}`),
   ]);
 }
 

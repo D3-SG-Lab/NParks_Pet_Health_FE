@@ -66,7 +66,7 @@ const stay: AnimalStayResponse = {
   dateOfBirth: '2023-04-05',
   arrivalDate: '2026-11-05',
   releaseDate: null,
-  status: 'staying',
+  status: 'active-monitoring',
   createdBy: 1,
   createdAt: '2026-11-05T02:00:00Z',
   updatedAt: '2026-11-05T02:00:00Z',
@@ -94,10 +94,10 @@ describe('arrivals on the backend API', () => {
     ]);
   });
 
-  it('checks the microchip against staying animals', async () => {
+  it('checks the microchip against active-monitoring animals', async () => {
     api.getApiV1Animals.mockImplementation(() => ok([stay]));
     expect(await isMicrochipTaken(' 982000999999991 ')).toBe(true);
-    expect(api.getApiV1Animals).toHaveBeenCalledWith({ query: { status: 'staying', search: '982000999999991' } });
+    expect(api.getApiV1Animals).toHaveBeenCalledWith({ query: { status: 'active-monitoring', search: '982000999999991' } });
     expect(await isMicrochipTaken('982000999999992')).toBe(false);
   });
 

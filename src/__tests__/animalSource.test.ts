@@ -1,7 +1,7 @@
 import * as sdk from '@/api/generated';
 import type { AnimalStayResponse } from '@/api/generated';
 import { listAnimals } from '@/features/animals/animalsApi';
-import { ensureAnimal, invalidateAnimals, syncAnimals } from '@/features/animals/animalSource';
+import { ensureAnimal, invalidateAnimals, loadAnimalRecords, syncAnimals } from '@/features/animals/animalSource';
 import { mockDb, resetMockDb } from '@/mock/db';
 import { canSeeAnimal } from '@/mock/scope';
 import { isoDateOf } from '@/utils/dates';
@@ -13,6 +13,7 @@ jest.mock('@/api/generated', () => ({
   getApiV1AnimalsById: jest.fn(),
   getApiV1AnimalsByStayIdExam: jest.fn(),
   getApiV1AnimalsByStayIdInspections: jest.fn(),
+  getApiV1AnimalsByStayIdObservations: jest.fn(),
 }));
 
 const api = sdk as jest.Mocked<typeof sdk>;
@@ -39,7 +40,7 @@ function stay(id: number, overrides: Partial<AnimalStayResponse> = {}): AnimalSt
     dateOfBirth: null,
     arrivalDate: '2026-11-01',
     releaseDate: null,
-    status: 'staying',
+    status: 'active-monitoring',
     createdBy: 1,
     createdAt: '2026-11-01T02:00:00Z',
     updatedAt: '2026-11-01T02:00:00Z',
@@ -91,13 +92,13 @@ describe('animals from the backend API', () => {
     expect(canSeeAnimal(contractor, { id: '12', kennel: 'KC1-1' })).toBe(true);
   });
 
-  it('lists the staying animals with their arrival exam status', async () => {
+  it('lists the active-monitoring animals with their arrival exam status', async () => {
     api.getApiV1Animals.mockImplementation(() => ok([stay(2), stay(1)]));
     api.getApiV1AnimalsByStayIdExam.mockImplementation((options) => (options.path.stayId === 1 ? ok(exam) : fail(404)));
 
     const items = await listAnimals({ id: '1', name: 'Officer', role: 'officer' });
 
-    expect(api.getApiV1Animals).toHaveBeenCalledWith({ query: { status: 'staying' } });
+    expect(api.getApiV1Animals).toHaveBeenCalledWith({ query: { status: 'active-monitoring' } });
     expect(items.map((i) => [i.animal.id, i.animal.kennel, i.animal.today.arrivalExam, i.status])).toEqual([
       ['1', 'K-01', 'done', 'due'],
       ['2', 'K-02', 'due', 'due'],
@@ -137,6 +138,30 @@ describe('animals from the backend API', () => {
     await syncAnimals();
     expect(mockDb.inspections.filter((i) => i.animalId === '1')).toHaveLength(2);
     expect(api.getApiV1AnimalsByStayIdExam).toHaveBeenCalledTimes(1);
+  });
+
+  it('still lists the animals when the server fails their inspections or exam (500)', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    api.getApiV1Animals.mockImplementation(() => ok([stay(1), stay(2)]));
+    api.getApiV1AnimalsByStayIdExam.mockImplementation((options) => (options.path.stayId === 1 ? ok(exam) : fail(500)));
+    api.getApiV1AnimalsByStayIdInspections.mockImplementation(() => fail(500));
+
+    const items = await listAnimals({ id: '1', name: 'Officer', role: 'officer' });
+
+    expect(items.map((i) => [i.animal.id, i.animal.today])).toEqual([
+      ['1', { arrivalExam: 'done', amInspection: 'due', pmInspection: 'due' }],
+      ['2', { arrivalExam: 'due', amInspection: 'due', pmInspection: 'due' }],
+    ]);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('opens the profile even when its observations and medication fail', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    api.getApiV1AnimalsByStayIdObservations.mockImplementation(() => fail(500));
+    await expect(loadAnimalRecords('1')).resolves.toBeUndefined();
+    expect(warn).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
   });
 
   it('loads one animal by id, ignoring released stays', async () => {

@@ -60,7 +60,10 @@ interface KennelOptionShape {
 }
 
 const listKennels = () => unwrap(getApiV1Kennels({ query: { isActive: true } }));
-const listStayingAnimals = (search?: string) => unwrap(getApiV1Animals({ query: { status: 'staying', search } }));
+/** Status of a stay under monitoring (the others are "released" and "deceased"). */
+export const ACTIVE_STAY_STATUS = 'active-monitoring';
+
+const listStayingAnimals = (search?: string) => unwrap(getApiV1Animals({ query: { status: ACTIVE_STAY_STATUS, search } }));
 
 export async function listKennelOptions(): Promise<KennelOptionShape[]> {
   const [kennels, animals] = await Promise.all([listKennels(), listStayingAnimals()]);
