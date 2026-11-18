@@ -283,7 +283,7 @@ function ProfileBody({ header, profile }: { header: ReactNode; profile: AnimalPr
                   </AppText>
                   <View>
                     {group.entries.map((entry, index) => (
-                      <TimelineRow key={entry.id} entry={entry} last={index === group.entries.length - 1} onPress={() => openTimelineEntry(entry)} />
+                      <TimelineRow key={`${entry.kind}-${entry.id}`} entry={entry} last={index === group.entries.length - 1} onPress={() => openTimelineEntry(entry)} />
                     ))}
                   </View>
                 </View>

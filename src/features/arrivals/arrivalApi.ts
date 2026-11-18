@@ -129,7 +129,7 @@ export async function isMicrochipTaken(microchip: string): Promise<boolean> {
   return mockDb.animals.some((animal) => animal.microchip === microchip.trim());
 }
 
-/** The fields POST /animals sends (the release date is not one of them). */
+/** The fields POST /animals sends. */
 function sameRegistration(a: ArrivalDetailsInput, b: ArrivalDetailsInput): boolean {
   return (
     a.name.trim() === b.name.trim() &&
@@ -138,7 +138,8 @@ function sameRegistration(a: ArrivalDetailsInput, b: ArrivalDetailsInput): boole
     a.countryCode === b.countryCode &&
     a.microchip.trim() === b.microchip.trim() &&
     a.sex === b.sex &&
-    (parseDdMmYyyy(a.dateOfBirth)?.iso ?? null) === (parseDdMmYyyy(b.dateOfBirth)?.iso ?? null)
+    (parseDdMmYyyy(a.dateOfBirth)?.iso ?? null) === (parseDdMmYyyy(b.dateOfBirth)?.iso ?? null) &&
+    (parseDdMmYyyy(a.releaseDate)?.iso ?? null) === (parseDdMmYyyy(b.releaseDate)?.iso ?? null)
   );
 }
 

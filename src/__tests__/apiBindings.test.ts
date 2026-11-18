@@ -1,6 +1,5 @@
 import { errorMessage } from '@/api/errors';
 import * as sdk from '@/api/generated';
-import * as manual from '@/api/manual';
 import { refreshMockSessionTokens, revokeMockSession } from '@/auth/mock';
 import type { Animal } from '@/domain/types';
 import { InspectionError, createDefaultInspection, submitInspection } from '@/features/inspections/inspectionApi';
@@ -8,7 +7,7 @@ import { MedicationError, getMedicationDay, listMedicationAnimals, recordAdminis
 import { submitObservation } from '@/features/observations/observationApi';
 import { mockDb, resetMockDb } from '@/mock/db';
 
-// API mode on, with the generated SDK and the hand-typed calls mocked: these tests check the requests the
+// API mode on, with the generated SDK mocked: these tests check the requests the
 // app sends (against the Postman collection) and how responses and errors are mapped, not the network.
 jest.mock('@/api', () => ({ ...jest.requireActual('@/api'), isApiEnabled: () => true }));
 jest.mock('@/config/env', () => ({ ...jest.requireActual('@/config/env'), isMockAuthEnabled: () => true }));
@@ -20,15 +19,12 @@ jest.mock('@/api/generated', () => ({
   postApiV1AuthDevToken: jest.fn(),
   postApiV1AuthRefresh: jest.fn(),
   postApiV1AuthLogout: jest.fn(),
-}));
-jest.mock('@/api/manual', () => ({
-  listMedicationAnimals: jest.fn(),
-  getAnimalMedicationDay: jest.fn(),
-  recordMedicationAdministration: jest.fn(),
+  getApiV1MedicationAnimals: jest.fn(),
+  getApiV1AnimalsByStayIdMedication: jest.fn(),
+  postApiV1MedicationAdministrations: jest.fn(),
 }));
 
 const api = sdk as jest.Mocked<typeof sdk>;
-const meds = manual as jest.Mocked<typeof manual>;
 
 function ok<T>(data: T, status = 200) {
   return Promise.resolve({ data, request: {} as Request, response: { ok: true, status } as Response }) as never;
@@ -182,14 +178,14 @@ describe('medication (Postman "Medication (AQC)")', () => {
   });
 
   it('lists backend animals next to the demo ones, and only demo ones when the server lacks the endpoint', async () => {
-    meds.listMedicationAnimals.mockImplementation(() => ok([{ animal: medAnimal, scheduleCount: 2, dueCount: 1, overdueCount: 0 }]));
+    api.getApiV1MedicationAnimals.mockImplementation(() => ok([{ animal: medAnimal, scheduleCount: 2, dueCount: 1, overdueCount: 0 }]));
     const items = await listMedicationAnimals(actor, NOW);
-    expect(meds.listMedicationAnimals).toHaveBeenCalledWith('2026-11-12');
+    expect(api.getApiV1MedicationAnimals).toHaveBeenCalledWith({ query: { date: '2026-11-12' } });
     expect(items.find((i) => i.animal.id === '5')).toMatchObject({ scheduleCount: 2, dueCount: 1, animal: { name: 'Buddy' } });
     expect(items.some((i) => !/^\d+$/.test(i.animal.id))).toBe(true);
 
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    meds.listMedicationAnimals.mockImplementation(() => fail(404));
+    api.getApiV1MedicationAnimals.mockImplementation(() => fail(404));
     const demoOnly = await listMedicationAnimals(actor, NOW);
     expect(demoOnly.every((i) => !/^\d+$/.test(i.animal.id))).toBe(true);
     warn.mockRestore();
@@ -197,11 +193,11 @@ describe('medication (Postman "Medication (AQC)")', () => {
 
   it('maps the day’s slots and caches the schedule for the profile', async () => {
     const given = { id: 5, scheduleId: 10, animalId: 5, slot: '2026-11-12T08:00', administeredAt: 1731394800000, by: 'Officer John', remarks: 'Given with food' };
-    meds.getAnimalMedicationDay.mockImplementation(() => ok({ animal: medAnimal, scheduleCount: 1, slots: [slot('18:00'), slot('08:00', given)] }));
+    api.getApiV1AnimalsByStayIdMedication.mockImplementation(() => ok({ animal: medAnimal, scheduleCount: 1, slots: [slot('18:00'), slot('08:00', given)] }));
 
     const day = await getMedicationDay(actor, '5', NOW);
 
-    expect(meds.getAnimalMedicationDay).toHaveBeenCalledWith(5, '2026-11-12');
+    expect(api.getApiV1AnimalsByStayIdMedication).toHaveBeenCalledWith({ path: { stayId: 5 }, query: { date: '2026-11-12' } });
     expect(day?.slots.map((s) => [s.time, s.status, s.scheduleId, s.administration?.id ?? null])).toEqual([
       ['08:00', 'administered', '10', '5'],
       ['18:00', 'due', '10', null],
@@ -211,14 +207,14 @@ describe('medication (Postman "Medication (AQC)")', () => {
   });
 
   it('records a dose with the Postman body and maps the 409', async () => {
-    meds.recordMedicationAdministration.mockImplementation(() =>
-      ok({ id: 6, scheduleId: 10, animalId: 5, slot: '2026-11-12T18:00', administeredAt: 1731430800000, by: 'Officer John', remarks: null }, 201),
+    api.postApiV1MedicationAdministrations.mockImplementation(() =>
+      ok({ id: 6, scheduleId: 10, animalId: 5, slot: '2026-11-12T18:00', administeredAt: '1731430800000', by: 'Officer John', remarks: '' }, 201),
     );
     const administration = await recordAdministration({ scheduleId: '10', slot: '2026-11-12T18:00', remarks: '  ', actor, now: NOW });
-    expect(meds.recordMedicationAdministration).toHaveBeenCalledWith({ scheduleId: 10, slot: '2026-11-12T18:00', remarks: null });
-    expect(administration).toMatchObject({ id: '6', animalId: '5', remarks: '' });
+    expect(api.postApiV1MedicationAdministrations).toHaveBeenCalledWith({ body: { scheduleId: 10, slot: '2026-11-12T18:00', remarks: '' } });
+    expect(administration).toMatchObject({ id: '6', animalId: '5', remarks: '', administeredAt: 1731430800000 });
 
-    meds.recordMedicationAdministration.mockImplementation(() =>
+    api.postApiV1MedicationAdministrations.mockImplementation(() =>
       fail(409, { error: 'MedicationError', kind: 'already_recorded', message: 'Dose already recorded for this slot.' }),
     );
     const error = await recordAdministration({ scheduleId: '10', slot: '2026-11-12T18:00', remarks: '', actor, now: NOW }).catch((e: unknown) => e);

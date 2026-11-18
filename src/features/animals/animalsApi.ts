@@ -32,7 +32,7 @@ import { resolvePendingAnalyses } from '@/mock/processing';
 import { ScopeError, animalsInScope, canSeeAnimal, isBackendId } from '@/mock/scope';
 import { isoDateOf, msAt, sessionFor } from '@/utils/dates';
 
-import { ensureAnimal, loadAnimalRecords, syncAnimals } from './animalSource';
+import { backendVetName, ensureAnimal, loadAnimalRecords, syncAnimals } from './animalSource';
 
 /** Picker / list status, in the wireframe's words. */
 export type AnimalListStatus = 'unwell' | 'due' | 'active';
@@ -91,7 +91,7 @@ export function filterAnimals(items: readonly AnimalListItem[], query: string, f
 // --- Timeline -----------------------------------------------------------------------------------
 
 function vetName(id: string | null): string {
-  return mockVets.find((vet) => vet.id === id)?.name ?? 'Vet';
+  return backendVetName(id) ?? mockVets.find((vet) => vet.id === id)?.name ?? 'Vet';
 }
 
 function examEntry(exam: ArrivalExamRecord): TimelineEntry {

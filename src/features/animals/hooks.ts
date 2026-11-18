@@ -37,7 +37,7 @@ export function useCountryName(code: string): string {
 
 export function useRecordDetail(entry: Pick<TimelineEntry, 'id' | 'kind' | 'caseId'> | null) {
   return useQuery({
-    queryKey: queryKeys.record(entry?.id ?? 'none'),
+    queryKey: queryKeys.record(entry?.kind ?? 'none', entry?.id ?? 'none'),
     queryFn: () => (entry ? getRecordDetail(entry) : Promise.resolve(null)),
     enabled: entry !== null,
   });

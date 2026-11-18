@@ -27,10 +27,10 @@ The endpoints come from `docs/NParksPetHealth_API.postman_collection.json`. With
 - **New Arrival and Arrival Exam:** kennels, countries, the microchip check, the exam draft (`/arrival-draft`), `POST /animals` when step 1 is completed (the stay shows with its exam due), then `POST /animals/{id}/exam` in step 2. There's no endpoint to edit a stay, so its details can't change once registered. Species come from `GET /master-data/species?isActive=true` (the name is sent); the vet picker lists `GET /master-data/vet-specialisations?isActive=true`; exam photos (camera or library via `expo-image-picker`) are uploaded on completion through `POST /media/presign` and a `PUT` to the returned URL, and sent as `photoKeys`.
 - **Animals** (every list, the picker, Animal Profile): `GET /animals?status=active-monitoring`, `GET /animals/{id}`, `GET /animals/{id}/exam`.
 - **Daily Inspection:** `POST` and `GET /animals/{id}/inspections` (the board and today's AM/PM status), `GET /animals/inspections/{id}` (record detail).
-- **New Health Observation:** `POST /observations` (unlinked text, or a backend animal), `GET /observations/{id}`, `GET /animals/{id}/observations` (timeline).
-- **Medication:** `GET /medication/animals`, `GET /animals/{id}/medication`, `POST /medication/administrations`. These aren't in the server's OpenAPI spec yet, so they're typed by hand in `src/api/manual.ts`.
+- **New Health Observation:** `POST /observations` (unlinked text, or a backend animal), `GET /observations/{id}`, `GET /animals/{id}/observations` (loaded for every animal: timeline, AI triage, Operations alerts).
+- **Medication:** `GET /medication/animals`, `GET /animals/{id}/medication`, `POST /medication/administrations`.
 
-Still demo data, as the backend has no endpoints for them: the AI result and routing (Confirm AI result, AI triage), health cases, the Operations alerts, and the AI summary. Observation photos and videos are still placeholders (only exam photos upload), and push tokens (`/me/push-token`) need a push library, which the app doesn't have yet.
+With `EXPO_PUBLIC_DEMO_DATA=false` every screen shows only backend data. Still worked out on the device, as the backend has no endpoints for them: the AI result and routing (Confirm AI result, AI triage), health cases, the Operations alerts, and the AI summary. Observation photos and videos are still placeholders (only exam photos upload), and push tokens (`/me/push-token`) need a push library, which the app doesn't have yet.
 
 `EXPO_PUBLIC_DEMO_DATA=false` hides the demo animals and records, so only backend data shows. Records made with "Work offline (demo)" on stay on the device.
 

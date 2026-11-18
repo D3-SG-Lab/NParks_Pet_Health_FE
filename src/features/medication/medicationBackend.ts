@@ -6,19 +6,20 @@
  * - GET  /api/v1/animals/{stayId}/medication?date=…        that animal's dose slots, status computed by the server
  * - POST /api/v1/medication/administrations                record a dose (one per slot; 409 otherwise)
  *
- * These are not in the server's OpenAPI spec yet, so they use the hand-typed calls in src/api/manual.ts.
  * The day's schedules and doses are also cached in the store, so the animal profile's medication count
  * and timeline include them. Errors are thrown as ApiError; medicationApi.ts maps them for the screens.
  */
 import { unwrap } from '@/api';
 import {
-  getAnimalMedicationDay,
-  listMedicationAnimals,
-  recordMedicationAdministration,
-  type DoseSlotDto,
-  type MedicationAdministrationDto,
-  type MedicationAnimalDto,
-} from '@/api/manual';
+  getApiV1AnimalsByStayIdMedication,
+  getApiV1MedicationAnimals,
+  postApiV1MedicationAdministrations,
+} from '@/api/generated';
+import type {
+  AnimalInfoResponse,
+  DoseSlotResponse,
+  MedicationAdministrationResponse,
+} from '@/api/generated';
 import {
   SEXES,
   SPECIES,
@@ -37,7 +38,7 @@ function oneOf<T extends string>(values: readonly T[], value: unknown, fallback:
 }
 
 /** The store's copy of the animal when it has one (same backend id), else the response's. */
-function toAnimal(dto: MedicationAnimalDto): Animal {
+function toAnimal(dto: AnimalInfoResponse): Animal {
   const id = String(dto.id);
   const known = mockDb.animals.find((a) => a.id === id);
   if (known) return known;
@@ -48,7 +49,7 @@ function toAnimal(dto: MedicationAnimalDto): Animal {
     kennel: dto.kennel,
     species: oneOf(SPECIES, dto.species, 'Other'),
     sex: oneOf(SEXES, dto.sex, 'Unknown'),
-    countryCode: dto.countryCode,
+    countryCode: dto.countryCode ?? '',
     microchip: dto.microchip,
     dateOfBirth: dto.dateOfBirth,
     arrivalDate: dto.arrivalDate,
@@ -58,19 +59,25 @@ function toAnimal(dto: MedicationAnimalDto): Animal {
   };
 }
 
-export function toAdministration(dto: MedicationAdministrationDto): MedicationAdministration {
+/** Epoch ms; the server may send it as a number, a numeric string or an ISO timestamp. */
+function toTime(value: number | string): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : Date.parse(String(value)) || Date.now();
+}
+
+export function toAdministration(dto: MedicationAdministrationResponse): MedicationAdministration {
   return {
     id: String(dto.id),
     scheduleId: String(dto.scheduleId),
     animalId: String(dto.animalId),
     slot: dto.slot,
-    administeredAt: dto.administeredAt,
+    administeredAt: toTime(dto.administeredAt),
     by: dto.by,
     remarks: dto.remarks ?? '',
   };
 }
 
-function toSlot(dto: DoseSlotDto): DoseSlot {
+function toSlot(dto: DoseSlotResponse): DoseSlot {
   return {
     slot: dto.slot,
     scheduleId: String(dto.scheduleId),
@@ -115,8 +122,13 @@ export interface BackendMedicationAnimal {
 }
 
 export async function listAnimals(date: string): Promise<BackendMedicationAnimal[]> {
-  const items = await unwrap(listMedicationAnimals(date));
-  return items.map((item) => ({ ...item, animal: toAnimal(item.animal) }));
+  const items = await unwrap(getApiV1MedicationAnimals({ query: { date } }));
+  return items.map((item) => ({
+    animal: toAnimal(item.animal),
+    scheduleCount: Number(item.scheduleCount),
+    dueCount: Number(item.dueCount),
+    overdueCount: Number(item.overdueCount),
+  }));
 }
 
 export interface BackendMedicationDay {
@@ -126,15 +138,15 @@ export interface BackendMedicationDay {
 }
 
 export async function getDay(animalId: string, date: string): Promise<BackendMedicationDay> {
-  const day = await unwrap(getAnimalMedicationDay(Number(animalId), date));
+  const day = await unwrap(getApiV1AnimalsByStayIdMedication({ path: { stayId: Number(animalId) }, query: { date } }));
   const slots = day.slots.map(toSlot).sort((a, b) => a.time.localeCompare(b.time));
   cacheDay(animalId, slots);
-  return { animal: toAnimal(day.animal), scheduleCount: day.scheduleCount, slots };
+  return { animal: toAnimal(day.animal), scheduleCount: Number(day.scheduleCount), slots };
 }
 
 export async function recordDose(scheduleId: string, slot: string, remarks: string): Promise<MedicationAdministration> {
   const administration = toAdministration(
-    await unwrap(recordMedicationAdministration({ scheduleId: Number(scheduleId), slot, remarks: remarks.trim() || null })),
+    await unwrap(postApiV1MedicationAdministrations({ body: { scheduleId: Number(scheduleId), slot, remarks: remarks.trim() } })),
   );
   mockDb.administrations.push(administration);
   return administration;

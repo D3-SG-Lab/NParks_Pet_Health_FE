@@ -4,6 +4,27 @@ export type ClientOptions = {
     baseUrl: 'https://linthitd3-001-site1.ktempurl.com/' | (string & {});
 };
 
+export type AnimalInfoResponse = {
+    id: number | string;
+    name: string;
+    kennel: string;
+    species: string;
+    sex: string;
+    countryCode: null | string;
+    microchip: string;
+    dateOfBirth: null | string;
+    arrivalDate: string;
+    releaseDate: null | string;
+    status: string;
+    today: TodayStatusResponse;
+};
+
+export type AnimalMedicationDayResponse = {
+    animal: AnimalInfoResponse;
+    scheduleCount: number | string;
+    slots: Array<DoseSlotResponse>;
+};
+
 export type AnimalStayResponse = {
     id: number | string;
     name: string;
@@ -90,6 +111,7 @@ export type CreateAnimalStayRequest = {
     microchip: string;
     dateOfBirth: null | string;
     arrivalDate: string;
+    releaseDate: null | string;
 };
 
 export type CreateArrivalExamRequest = {
@@ -158,6 +180,19 @@ export type DevTokenRequestDto = {
     aqcStaffRole?: null | string;
 };
 
+export type DoseSlotResponse = {
+    slot: string;
+    scheduleId: number | string;
+    item: string;
+    dose: string;
+    frequency: string;
+    startDate: string;
+    endDate: string;
+    time: string;
+    status: string;
+    administration: null | MedicationAdministrationResponse;
+};
+
 export type InspectionSystemFindingInput = {
     system: string;
     finding: string;
@@ -173,6 +208,23 @@ export type JsonElement = unknown;
 
 export type LogoutRequestDto = {
     refresh_token: string;
+};
+
+export type MedicationAdministrationResponse = {
+    id: number | string;
+    scheduleId: number | string;
+    animalId: number | string;
+    slot: string;
+    administeredAt: number | string;
+    by: string;
+    remarks: string;
+};
+
+export type MedicationAnimalItemResponse = {
+    animal: AnimalInfoResponse;
+    scheduleCount: number | string;
+    dueCount: number | string;
+    overdueCount: number | string;
 };
 
 export type NParksAdminResponse = {
@@ -260,8 +312,19 @@ export type ProblemDetails = {
     instance?: null | string;
 };
 
+export type RecordMedicationRequest = {
+    scheduleId: number | string;
+    slot: string;
+    remarks: string;
+};
+
 export type RefreshRequestDto = {
     refresh_token: string;
+};
+
+export type RegisterPushTokenRequest = {
+    token: string;
+    platform: string;
 };
 
 export type SaveExamDraftRequest = {
@@ -275,6 +338,12 @@ export type SubmitObservationRequest = {
     stayId: null | number | string;
     text: string;
     media: null | Array<ObservationMediaInput>;
+};
+
+export type TodayStatusResponse = {
+    arrivalExam: string;
+    amInspection: string;
+    pmInspection: string;
 };
 
 export type TokenResponseDto = {
@@ -1352,6 +1421,159 @@ export type PostApiV1MediaPresignResponses = {
 };
 
 export type PostApiV1MediaPresignResponse = PostApiV1MediaPresignResponses[keyof PostApiV1MediaPresignResponses];
+
+export type GetApiV1MedicationAnimalsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        date?: string;
+    };
+    url: '/api/v1/medication/animals';
+};
+
+export type GetApiV1MedicationAnimalsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+};
+
+export type GetApiV1MedicationAnimalsError = GetApiV1MedicationAnimalsErrors[keyof GetApiV1MedicationAnimalsErrors];
+
+export type GetApiV1MedicationAnimalsResponses = {
+    /**
+     * OK
+     */
+    200: Array<MedicationAnimalItemResponse>;
+};
+
+export type GetApiV1MedicationAnimalsResponse = GetApiV1MedicationAnimalsResponses[keyof GetApiV1MedicationAnimalsResponses];
+
+export type GetApiV1AnimalsByStayIdMedicationData = {
+    body?: never;
+    path: {
+        stayId: number;
+    };
+    query?: {
+        date?: string;
+    };
+    url: '/api/v1/animals/{stayId}/medication';
+};
+
+export type GetApiV1AnimalsByStayIdMedicationErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetApiV1AnimalsByStayIdMedicationError = GetApiV1AnimalsByStayIdMedicationErrors[keyof GetApiV1AnimalsByStayIdMedicationErrors];
+
+export type GetApiV1AnimalsByStayIdMedicationResponses = {
+    /**
+     * OK
+     */
+    200: AnimalMedicationDayResponse;
+};
+
+export type GetApiV1AnimalsByStayIdMedicationResponse = GetApiV1AnimalsByStayIdMedicationResponses[keyof GetApiV1AnimalsByStayIdMedicationResponses];
+
+export type PostApiV1MedicationAdministrationsData = {
+    body: RecordMedicationRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/medication/administrations';
+};
+
+export type PostApiV1MedicationAdministrationsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type PostApiV1MedicationAdministrationsError = PostApiV1MedicationAdministrationsErrors[keyof PostApiV1MedicationAdministrationsErrors];
+
+export type PostApiV1MedicationAdministrationsResponses = {
+    /**
+     * Created
+     */
+    201: MedicationAdministrationResponse;
+};
+
+export type PostApiV1MedicationAdministrationsResponse = PostApiV1MedicationAdministrationsResponses[keyof PostApiV1MedicationAdministrationsResponses];
+
+export type DeleteApiV1MePushTokenData = {
+    body?: never;
+    path?: never;
+    query?: {
+        platform?: string;
+    };
+    url: '/api/v1/me/push-token';
+};
+
+export type DeleteApiV1MePushTokenErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+};
+
+export type DeleteApiV1MePushTokenError = DeleteApiV1MePushTokenErrors[keyof DeleteApiV1MePushTokenErrors];
+
+export type DeleteApiV1MePushTokenResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteApiV1MePushTokenResponse = DeleteApiV1MePushTokenResponses[keyof DeleteApiV1MePushTokenResponses];
+
+export type PutApiV1MePushTokenData = {
+    body: RegisterPushTokenRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/push-token';
+};
+
+export type PutApiV1MePushTokenErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+};
+
+export type PutApiV1MePushTokenError = PutApiV1MePushTokenErrors[keyof PutApiV1MePushTokenErrors];
+
+export type PutApiV1MePushTokenResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutApiV1MePushTokenResponse = PutApiV1MePushTokenResponses[keyof PutApiV1MePushTokenResponses];
 
 export type PostApiV1ObservationsData = {
     body: SubmitObservationRequest;

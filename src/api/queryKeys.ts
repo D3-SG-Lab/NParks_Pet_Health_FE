@@ -6,7 +6,8 @@ export const queryKeys = {
   animalList: ['animals', 'list'] as const,
   recentAnimals: ['animals', 'recent'] as const,
   animalProfile: (id: string) => ['animals', 'profile', id] as const,
-  record: (id: string) => ['animals', 'record', id] as const,
+  /** Backend ids are only unique per kind (inspection 10 and observation 10 can both exist). */
+  record: (kind: string, id: string) => ['animals', 'record', kind, id] as const,
   kennels: ['kennels'] as const,
   vets: ['vets'] as const,
   species: ['species'] as const,

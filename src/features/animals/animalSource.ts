@@ -1,8 +1,9 @@
 /**
  * Animals from the backend: GET /animals?status=active-monitoring, GET /animals/{id}, GET /animals/{id}/exam, plus
  * each animal's inspections (GET /animals/{id}/inspections) so the inspection board and today's AM/PM
- * status come from the server. The animal profile also loads the animal's observations and today's
- * medication (loadAnimalRecords).
+ * status come from the server, and its observations (GET /animals/{id}/observations) for AI triage and
+ * the Operations alerts. The animal profile also loads today's medication (loadAnimalRecords).
+ * Observations not linked to an animal can't be listed: there is no endpoint for all observations.
  *
  * The feature data layers read animals and records from the in-memory store, so with the API on this
  * module merges the backend's data into that store, next to the demo animals (unless
@@ -13,7 +14,7 @@ import { ApiError, isApiEnabled, unwrap } from '@/api';
 import { getApiV1Animals, getApiV1AnimalsById, getApiV1AnimalsByStayIdExam } from '@/api/generated';
 import type { AnimalStayResponse } from '@/api/generated';
 import type { Animal } from '@/domain/types';
-import { ACTIVE_STAY_STATUS, toAnimal, toExamRecord } from '@/features/arrivals/arrivalBackend';
+import { ACTIVE_STAY_STATUS, listVets, toAnimal, toExamRecord } from '@/features/arrivals/arrivalBackend';
 import { loadInspections } from '@/features/inspections/inspectionBackend';
 import { getDay } from '@/features/medication/medicationBackend';
 import { loadObservations } from '@/features/observations/observationBackend';
@@ -59,6 +60,7 @@ async function toStoredAnimal(stay: AnimalStayResponse): Promise<Animal> {
   const [examDone, inspections] = await Promise.all([
     known?.today.arrivalExam === 'done' || optional(loadExam(id), false, `the arrival exam of animal ${id}`),
     optional(loadInspections(id), [], `the inspections of animal ${id}`),
+    optional(loadObservations(id), undefined, `the observations of animal ${id}`),
   ]);
   const today = isoDateOf(Date.now());
   const done = (session: 'AM' | 'PM') => (inspections.some((i) => i.date === today && i.session === session) ? 'done' : 'due');
@@ -108,8 +110,20 @@ export async function loadAnimalRecords(animalId: string, now: number = Date.now
   if (!isApiEnabled() || !isBackendId(animalId)) return;
   await Promise.all([
     optional(loadObservations(animalId), undefined, `the observations of animal ${animalId}`),
+    vetNames.size > 0 || optional(loadVetNames(), undefined, 'the vet list'),
     optional(getDay(animalId, isoDateOf(now)), undefined, `today's medication of animal ${animalId}`),
   ]);
+}
+
+/** Vet names by id from the backend's vet list, for exam records (empty until loaded). */
+let vetNames = new Map<string, string>();
+
+export function backendVetName(id: string | null): string | null {
+  return id ? (vetNames.get(id) ?? null) : null;
+}
+
+async function loadVetNames(): Promise<void> {
+  vetNames = new Map((await listVets()).map((vet) => [vet.id, vet.name]));
 }
 
 /** Forgets the last sync, so the next read fetches again (after an arrival or sign-out). */

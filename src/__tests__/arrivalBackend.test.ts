@@ -110,7 +110,7 @@ describe('arrivals on the backend API', () => {
     const animal = await completeArrival({ details, exam });
 
     expect(api.postApiV1Animals).toHaveBeenCalledWith({
-      body: expect.objectContaining({ name: 'Nala', kennelId: 2, species: 'Cat', sex: 'Female', countryCode: 'JP', dateOfBirth: '2023-04-05' }),
+      body: expect.objectContaining({ name: 'Nala', kennelId: 2, species: 'Cat', sex: 'Female', countryCode: 'JP', dateOfBirth: '2023-04-05', releaseDate: null }),
     });
     const examCall = api.postApiV1AnimalsByStayIdExam.mock.calls[0]?.[0];
     expect(examCall?.path).toEqual({ stayId: 41 });
@@ -144,18 +144,20 @@ describe('arrivals on the backend API', () => {
     api.postApiV1Animals.mockImplementation(() => ok(stay, 201));
     api.postApiV1AnimalsByStayIdExam.mockImplementation(() => ok({}, 201));
 
-    const draft = await registerArrival(details);
+    const withRelease = { ...details, releaseDate: '10/01/2027' };
+    const draft = await registerArrival(withRelease);
     expect(api.postApiV1Animals).toHaveBeenCalledTimes(1);
+    expect(api.postApiV1Animals.mock.calls[0]?.[0].body).toMatchObject({ releaseDate: '2027-01-10' });
     expect(draft?.registeredStay?.id).toBe('41');
     expect(mockDb.animals.find((a) => a.id === '41')?.today.arrivalExam).toBe('due');
 
     // Back to step 1 and on again with the same details: no second stay, and its own microchip isn't "taken".
-    await registerArrival({ ...details, releaseDate: '01/12/2026' });
+    await registerArrival(withRelease);
     expect(api.postApiV1Animals).toHaveBeenCalledTimes(1);
     expect(await isMicrochipTaken(details.microchip)).toBe(false);
     expect(api.getApiV1Animals).not.toHaveBeenCalled();
 
-    const animal = await completeArrival({ details, exam: createEmptyExam() });
+    const animal = await completeArrival({ details: withRelease, exam: createEmptyExam() });
     expect(api.postApiV1Animals).toHaveBeenCalledTimes(1);
     expect(api.postApiV1AnimalsByStayIdExam.mock.calls[0]?.[0].path).toEqual({ stayId: 41 });
     expect(animal).toMatchObject({ id: '41', today: { arrivalExam: 'done' } });
@@ -167,6 +169,7 @@ describe('arrivals on the backend API', () => {
     await registerArrival(details);
     const error = await registerArrival({ ...details, kennel: 'K-01' }).catch((e: unknown) => e);
     expect(error).toMatchObject({ kind: 'already_registered' });
+    await expect(registerArrival({ ...details, releaseDate: '10/01/2027' })).rejects.toMatchObject({ kind: 'already_registered' });
     expect(api.postApiV1Animals).toHaveBeenCalledTimes(1);
   });
 

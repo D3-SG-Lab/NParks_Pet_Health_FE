@@ -14,6 +14,7 @@ jest.mock('@/api/generated', () => ({
   getApiV1AnimalsByStayIdExam: jest.fn(),
   getApiV1AnimalsByStayIdInspections: jest.fn(),
   getApiV1AnimalsByStayIdObservations: jest.fn(),
+  getApiV1MasterDataVetSpecialisations: jest.fn(),
 }));
 
 const api = sdk as jest.Mocked<typeof sdk>;
@@ -67,6 +68,7 @@ describe('animals from the backend API', () => {
     mockDb.exams = [];
     mockDb.inspections = [];
     api.getApiV1AnimalsByStayIdInspections.mockImplementation(() => ok([]));
+    api.getApiV1AnimalsByStayIdObservations.mockImplementation(() => ok([]));
   });
 
   it('adds the backend animals next to the demo animals, which keep their records', async () => {
@@ -122,6 +124,7 @@ describe('animals from the backend API', () => {
     await Promise.all([syncAnimals(), syncAnimals()]);
     expect(api.getApiV1Animals).toHaveBeenCalledTimes(1);
     expect(api.getApiV1AnimalsByStayIdInspections).toHaveBeenCalledWith({ path: { stayId: 1 } });
+    expect(api.getApiV1AnimalsByStayIdObservations).toHaveBeenCalledWith({ path: { stayId: 1 } });
     expect(mockDb.animals[0]?.today).toEqual({ arrivalExam: 'done', amInspection: 'done', pmInspection: 'due' });
     expect(mockDb.inspections.find((i) => i.id === '101')).toMatchObject({
       animalId: '1',
@@ -156,11 +159,12 @@ describe('animals from the backend API', () => {
     warn.mockRestore();
   });
 
-  it('opens the profile even when its observations and medication fail', async () => {
+  it('opens the profile even when its observations, medication and the vet list fail', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     api.getApiV1AnimalsByStayIdObservations.mockImplementation(() => fail(500));
+    api.getApiV1MasterDataVetSpecialisations.mockImplementation(() => fail(500));
     await expect(loadAnimalRecords('1')).resolves.toBeUndefined();
-    expect(warn).toHaveBeenCalledTimes(2);
+    expect(warn).toHaveBeenCalledTimes(3);
     warn.mockRestore();
   });
 

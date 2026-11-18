@@ -12,7 +12,6 @@
  *   is mirrored to PUT /arrival-draft/exam.
  * - No endpoint lists AQC vets. As agreed, the vet picker lists GET /master-data/vet-specialisations
  *   (active only) and sends the picked entry's id as vetStaffId; the backend must accept those ids.
- * - POST /animals has no releaseDate, so the expected release date is not sent.
  * - There is no endpoint to edit a stay's details, so once registered they can't change (arrivalApi.ts).
  * - Exam photos of abnormal findings are uploaded when the exam is completed: presigned (5 per request),
  *   PUT to object storage, and their media keys sent as photoKeys.
@@ -31,7 +30,13 @@ import {
   postApiV1MediaPresign,
   putApiV1ArrivalDraftExam,
 } from '@/api/generated';
-import type { AnimalStayResponse, ArrivalExamFindingInput, ArrivalExamResponse, AqcKennelResponse } from '@/api/generated';
+import type {
+  AnimalStayResponse,
+  ArrivalExamFindingInput,
+  ArrivalExamResponse,
+  AqcKennelResponse,
+  CreateAnimalStayRequest,
+} from '@/api/generated';
 import {
   EXAM_SYSTEMS,
   MENTATIONS,
@@ -297,21 +302,19 @@ export function toAnimal(stay: AnimalStayResponse, examDone = true): Animal {
 export async function registerStay(details: ArrivalDetailsInput): Promise<AnimalStayResponse> {
   const kennel: AqcKennelResponse | undefined = (await listKennels()).find((k) => k.code === details.kennel);
   if (!kennel) throw new ArrivalError('incomplete', `Kennel ${details.kennel} is no longer available. Pick another kennel.`);
+  const body: CreateAnimalStayRequest = {
+    name: details.name.trim(),
+    kennelId: kennel.id,
+    species: details.species,
+    sex: details.sex,
+    countryCode: details.countryCode,
+    microchip: details.microchip.trim(),
+    dateOfBirth: parseDdMmYyyy(details.dateOfBirth)?.iso ?? null,
+    arrivalDate: todayIso(),
+    releaseDate: parseDdMmYyyy(details.releaseDate)?.iso ?? null,
+  };
   try {
-    return await unwrap(
-      postApiV1Animals({
-        body: {
-          name: details.name.trim(),
-          kennelId: kennel.id,
-          species: details.species,
-          sex: details.sex,
-          countryCode: details.countryCode,
-          microchip: details.microchip.trim(),
-          dateOfBirth: parseDdMmYyyy(details.dateOfBirth)?.iso ?? null,
-          arrivalDate: todayIso(),
-        },
-      }),
-    );
+    return await unwrap(postApiV1Animals({ body }));
   } catch (error) {
     if (error instanceof ApiError && error.status === 409) throw new ArrivalError('microchip_taken', error.message);
     throw error;
