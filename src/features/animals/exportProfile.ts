@@ -35,7 +35,7 @@ export function profileHtml(profile: AnimalProfile, now: number = Date.now()): s
     <div class="muted">${e(`${animal.kennel} · ${animal.species} · ${animal.sex} · ${formatMicrochip(animal.microchip)}`)}</div>
     <div class="muted">${e(`Stay ${isoToDdMmYyyy(animal.arrivalDate)} – ${animal.releaseDate ? isoToDdMmYyyy(animal.releaseDate) : 'not set'} · exported ${formatDateTime(now)}`)}</div>
     ${openCases.length ? `<h2>Open cases</h2><ul>${openCases.map((c) => `<li>${e(`${c.id} · ${c.finding}`)}</li>`).join('')}</ul>` : ''}
-    <h2>AI 30-day summary</h2><div class="ai"><ul>${statements}</ul><ol style="list-style:none;padding:0" class="muted">${sources}</ol>
+    <h2>AI 30-day summary</h2><div class="ai"><ul>${statements || '<li>No AI summary yet.</li>'}</ul><ol style="list-style:none;padding:0" class="muted">${sources}</ol>
     <p class="muted">AI-generated from this animal's records.</p></div>
     <h2>Health record</h2><table>${rows}</table>
   </body></html>`;

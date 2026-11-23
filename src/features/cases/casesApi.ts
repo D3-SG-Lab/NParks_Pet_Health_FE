@@ -1,24 +1,61 @@
 /**
  * Health case management data access.
  *
- * MOCK: reads and writes the in-memory demo store. OUTSTANDING endpoints (BE-017): list/filter,
- * detail, assign, follow-up actions, notes, status transitions (invalid ones return 409), close with
- * a reason (officers only) and manual reopen. The API must enforce the officer-only rules too.
+ * With EXPO_PUBLIC_API_URL set and online, cases come from the backend (casesBackend.ts): the list
+ * (GET /cases), detail (GET /cases/{caseId}), assign and follow-up actions (PATCH /cases/{caseId}) and
+ * close with a reason (POST /cases/{caseId}/close). Cases of demo animals stay on the in-memory store.
+ * OUTSTANDING endpoints: case notes, "mark as reviewed" and a manual reopen. A backend case is reopened
+ * by routing a related observation to it; CaseDetail.actions tells the screen what it can offer.
  */
+import { ApiError, isApiEnabled } from '@/api';
 import type { Actor, Animal, HealthCase, StaffMember } from '@/domain/types';
 import { syncAnimals } from '@/features/animals/animalSource';
 import { summariseCase } from '@/mock/ai';
 import { mockDb, newMockId } from '@/mock/db';
 import { overTheWire, simulateLatency } from '@/mock/latency';
-import { ScopeError, canSeeAnimal } from '@/mock/scope';
+import { ScopeError, canSeeAnimal, isBackendId } from '@/mock/scope';
+import { isOnline } from '@/mock/sync';
 import { isoDateOf } from '@/utils/dates';
 
+import * as backend from './casesBackend';
+
 export class CaseError extends Error {
-  readonly kind: 'not_found' | 'forbidden' | 'invalid_transition' | 'reason_required' | 'empty';
+  readonly kind: 'not_found' | 'forbidden' | 'invalid_transition' | 'reason_required' | 'empty' | 'rejected' | 'unsupported' | 'offline';
   constructor(kind: CaseError['kind'], message: string) {
     super(message);
     this.name = 'CaseError';
     this.kind = kind;
+  }
+}
+
+/**
+ * True when the case lives on the backend: the API is on and it is not a demo case (demo cases belong
+ * to demo animals, whose ids are not numeric).
+ */
+function isBackendCase(caseId: string): boolean {
+  return isApiEnabled() && !mockDb.cases.some((c) => c.id === caseId && !isBackendId(c.animalId));
+}
+
+/** Changes to a backend case need the server. */
+function requireOnline(): void {
+  if (!isOnline()) throw new CaseError('offline', 'Case changes need a connection. Turn off "Work offline" and try again.');
+}
+
+/** The server's rejection as a CaseError with its message; anything else (5xx, network) is rethrown. */
+function caseErrorFrom(error: unknown): never {
+  if (error instanceof ApiError && error.rejected) {
+    const kind = error.status === 404 ? 'not_found' : error.status === 403 ? 'forbidden' : error.status === 409 ? 'invalid_transition' : 'rejected';
+    throw new CaseError(kind, error.message);
+  }
+  throw error;
+}
+
+async function onBackend<T>(call: () => Promise<T>): Promise<T> {
+  requireOnline();
+  try {
+    return await call();
+  } catch (error) {
+    return caseErrorFrom(error);
   }
 }
 
@@ -40,17 +77,29 @@ function staffById(id: string | null): StaffMember | null {
   return mockDb.staff.find((member) => member.id === id) ?? null;
 }
 
-/** All cases the user may see, most recently updated first. */
+/**
+ * Refreshes the store's backend cases (GET /cases) for screens that derive from them (Operations, the
+ * animal list and profile, routing choices). Does nothing without the API or while working offline.
+ */
+export async function syncCases(): Promise<void> {
+  if (isApiEnabled() && isOnline()) await backend.listCases();
+}
+
+/** All cases the user may see: open work first, then most recently updated. */
 export async function listCases(actor: Actor, now: number = Date.now()): Promise<CaseListItem[]> {
   await simulateLatency();
   await syncAnimals();
   const today = isoDateOf(now);
-  return overTheWire(mockDb.cases
-    .flatMap((healthCase) => {
-      const animal = mockDb.animals.find((a) => a.id === healthCase.animalId);
-      if (!animal || !canSeeAnimal(actor, animal)) return [];
-      return [{ healthCase, animal, assignee: staffById(healthCase.assigneeId), overdueFollowUps: overdueCount(healthCase, today) }];
-    })
+  // Online with the API, the server lists the backend cases (with their animals, even released ones).
+  const fromBackend: CaseListItem[] = isApiEnabled() && isOnline() ? await backend.listCases() : [];
+  const listed = new Set(fromBackend.map((item) => item.healthCase.id));
+  const fromStore = mockDb.cases.flatMap((healthCase) => {
+    if (listed.has(healthCase.id)) return [];
+    const animal = mockDb.animals.find((a) => a.id === healthCase.animalId);
+    if (!animal || !canSeeAnimal(actor, animal)) return [];
+    return [{ healthCase, animal, assignee: staffById(healthCase.assigneeId), overdueFollowUps: overdueCount(healthCase, today) }];
+  });
+  return overTheWire([...fromBackend, ...fromStore]
     .sort((a, b) => {
       // Open work first, then most recently updated.
       const rank = (c: HealthCase) => (c.status === 'closed' ? 1 : 0);
@@ -81,10 +130,24 @@ export interface CaseDetail {
   summary: string;
   /** An observation for this case still waiting for AI confirmation, if any. */
   pendingObservationId: string | null;
+  /** Actions the case supports. Backend cases have no endpoints yet for notes, review or a manual reopen. */
+  actions: { note: boolean; markReviewed: boolean; reopen: boolean };
 }
+
+const ALL_ACTIONS: CaseDetail['actions'] = { note: true, markReviewed: true, reopen: true };
+const BACKEND_ACTIONS: CaseDetail['actions'] = { note: false, markReviewed: false, reopen: false };
 
 export async function getCase(actor: Actor, id: string, now: number = Date.now()): Promise<CaseDetail | null> {
   await simulateLatency();
+  if (isBackendCase(id) && isOnline()) {
+    try {
+      return overTheWire({ ...(await backend.getCase(id)), actions: BACKEND_ACTIONS });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) return null;
+      if (error instanceof ApiError && error.status === 403) throw new ScopeError();
+      throw error;
+    }
+  }
   const healthCase = mockDb.cases.find((c) => c.id === id);
   if (!healthCase) return null;
   const animal = mockDb.animals.find((a) => a.id === healthCase.animalId);
@@ -99,14 +162,20 @@ export async function getCase(actor: Actor, id: string, now: number = Date.now()
     assignee: staffById(healthCase.assigneeId),
     summary: summariseCase(healthCase, now),
     pendingObservationId: pending?.id ?? null,
+    actions: isBackendId(healthCase.animalId) ? BACKEND_ACTIONS : ALL_ACTIONS,
   });
 }
 
-/** Officer-side staff who can be assigned, with the current user added if missing. */
-export async function listAssignableStaff(actor: Actor): Promise<StaffMember[]> {
+/**
+ * Officer-side staff who can be assigned to the case, with the current user added if missing. There is
+ * no staff list endpoint, so a backend case offers the staff seen as assignees on backend cases.
+ */
+export async function listAssignableStaff(actor: Actor, caseId: string): Promise<StaffMember[]> {
   await simulateLatency(0);
-  const staff = mockDb.staff.filter((member) => member.role !== 'contractor');
-  return overTheWire(actor.role === 'officer' && !staff.some((m) => m.id === actor.id)
+  const onBackendCase = isBackendCase(caseId);
+  const staff = mockDb.staff.filter((member) => member.role !== 'contractor' && isBackendId(member.id) === onBackendCase);
+  const canAddSelf = !onBackendCase || isBackendId(actor.id);
+  return overTheWire(actor.role === 'officer' && canAddSelf && !staff.some((m) => m.id === actor.id)
     ? [{ id: actor.id, name: actor.name, role: 'officer' }, ...staff]
     : staff);
 }
@@ -130,6 +199,10 @@ export interface CaseActionBase {
 export async function assignCase({ caseId, staffId, actor, now = Date.now() }: CaseActionBase & { staffId: string }): Promise<void> {
   await simulateLatency();
   if (actor.role !== 'officer') throw new CaseError('forbidden', 'Only officers can reassign cases.');
+  if (isBackendCase(caseId)) {
+    await onBackend(() => backend.patchCase(caseId, staffId, null));
+    return;
+  }
   const healthCase = findCase(caseId);
   let member = staffById(staffId);
   if (!member && staffId === actor.id) {
@@ -146,6 +219,15 @@ export async function addFollowUp({ caseId, text, dueDate, actor, now = Date.now
   await simulateLatency();
   const trimmed = text.trim();
   if (!trimmed) throw new CaseError('empty', 'Describe the follow-up action.');
+  if (isBackendCase(caseId)) {
+    await onBackend(async () => {
+      // The PATCH replaces the whole list, so start from the server's current one.
+      const { healthCase } = await backend.getCase(caseId);
+      if (healthCase.status === 'closed') throw new CaseError('invalid_transition', 'Reopen the case to add follow-up actions.');
+      await backend.patchCase(caseId, healthCase.assigneeId, [...healthCase.followUps, { id: null, text: trimmed, dueDate, done: false }]);
+    });
+    return;
+  }
   const healthCase = findCase(caseId);
   if (healthCase.status === 'closed') throw new CaseError('invalid_transition', 'Reopen the case to add follow-up actions.');
   healthCase.followUps.push({ id: newMockId('fu'), text: trimmed, dueDate, done: false });
@@ -155,6 +237,14 @@ export async function addFollowUp({ caseId, text, dueDate, actor, now = Date.now
 
 export async function setFollowUpDone({ caseId, followUpId, done, actor, now = Date.now() }: CaseActionBase & { followUpId: string; done: boolean }): Promise<void> {
   await simulateLatency(150);
+  if (isBackendCase(caseId)) {
+    await onBackend(async () => {
+      const { healthCase } = await backend.getCase(caseId);
+      if (!healthCase.followUps.some((f) => f.id === followUpId)) throw new CaseError('not_found', 'That follow-up action was not found.');
+      await backend.patchCase(caseId, healthCase.assigneeId, healthCase.followUps.map((f) => (f.id === followUpId ? { ...f, done } : f)));
+    });
+    return;
+  }
   const healthCase = findCase(caseId);
   const followUp = healthCase.followUps.find((f) => f.id === followUpId);
   if (!followUp) throw new CaseError('not_found', 'That follow-up action was not found.');
@@ -173,6 +263,7 @@ export async function addNote({ caseId, text, actor, now = Date.now() }: CaseAct
   await simulateLatency();
   const trimmed = text.trim();
   if (!trimmed) throw new CaseError('empty', 'Write a note first.');
+  if (isBackendCase(caseId)) throw new CaseError('unsupported', 'Notes can’t be added to this case yet.');
   const healthCase = findCase(caseId);
   healthCase.events.push({ id: newMockId('ev'), at: now, kind: 'note', title: 'Note added', detail: trimmed, by: actor.name });
   touch(healthCase, now);
@@ -180,6 +271,7 @@ export async function addNote({ caseId, text, actor, now = Date.now() }: CaseAct
 
 export async function markReviewed({ caseId, actor, now = Date.now() }: CaseActionBase): Promise<void> {
   await simulateLatency();
+  if (isBackendCase(caseId)) throw new CaseError('unsupported', 'This case can’t be marked as reviewed yet.');
   const healthCase = findCase(caseId);
   if (healthCase.status !== 'review') throw new CaseError('invalid_transition', 'This case does not need review.');
   healthCase.status = 'open';
@@ -192,6 +284,10 @@ export async function closeCase({ caseId, reason, note, actor, now = Date.now() 
   await simulateLatency();
   if (actor.role !== 'officer') throw new CaseError('forbidden', 'Only officers can close cases.');
   if (!reason.trim()) throw new CaseError('reason_required', 'Choose a reason for closing the case.');
+  if (isBackendCase(caseId)) {
+    await onBackend(() => backend.closeCase(caseId, reason.trim(), note));
+    return;
+  }
   const healthCase = findCase(caseId);
   if (healthCase.status === 'closed') throw new CaseError('invalid_transition', 'This case is already closed.');
   healthCase.status = 'closed';
@@ -212,6 +308,7 @@ export async function closeCase({ caseId, reason, note, actor, now = Date.now() 
 export async function reopenCase({ caseId, actor, now = Date.now() }: CaseActionBase): Promise<void> {
   await simulateLatency();
   if (actor.role !== 'officer') throw new CaseError('forbidden', 'Only officers can reopen cases.');
+  if (isBackendCase(caseId)) throw new CaseError('unsupported', 'Reopen this case by routing a related observation to it.');
   const healthCase = findCase(caseId);
   if (healthCase.status !== 'closed') throw new CaseError('invalid_transition', 'This case is already open.');
   healthCase.status = 'open';

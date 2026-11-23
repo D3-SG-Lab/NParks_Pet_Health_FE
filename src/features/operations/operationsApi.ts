@@ -1,13 +1,16 @@
 /**
  * Operations dashboard data access.
  *
- * MOCK: derived from the in-memory demo store. OUTSTANDING endpoint (BE-021): today's monitoring
- * counts, the review count and alerts. Counts are derived from the same records the other screens
- * use, so changes show up everywhere.
+ * Derived from the store, which with EXPO_PUBLIC_API_URL set holds the backend's animals, cases
+ * (GET /cases) and review queue (GET /observations/review-queue) too. OUTSTANDING endpoint (BE-021):
+ * today's monitoring counts, the review count and alerts in one call; alerts are still demo data.
+ * Counts are derived from the same records the other screens use, so changes show up everywhere.
  */
 import { OVERDUE_AFTER_MS, SESSION_DUE_TIME } from '@/domain/describe';
 import type { Actor, OperationsAlert, OperationsSummary } from '@/domain/types';
 import { syncAnimals } from '@/features/animals/animalSource';
+import { syncCases } from '@/features/cases/casesApi';
+import { syncReviewQueue } from '@/features/observations/observationApi';
 import { mockDb } from '@/mock/db';
 import { overTheWire, simulateLatency } from '@/mock/latency';
 import { resolvePendingAnalyses } from '@/mock/processing';
@@ -17,6 +20,14 @@ import { isoDateOf, msAt, sessionFor } from '@/utils/dates';
 export async function getOperationsSummary(actor: Actor, now: number = Date.now()): Promise<OperationsSummary> {
   await simulateLatency();
   await syncAnimals();
+  // Counts only: when either fails, Operations still shows what the store has.
+  await Promise.all(
+    [syncCases(), syncReviewQueue()].map((load) =>
+      load.catch((error: unknown) => {
+        if (__DEV__) console.warn("Operations: couldn't refresh cases or the review queue.", error);
+      }),
+    ),
+  );
   resolvePendingAnalyses(now);
   const session = sessionFor(new Date(now));
   const animals = animalsInScope(actor);

@@ -27,9 +27,9 @@ export function useCaseDetail(caseId: string) {
   return useQuery({ queryKey: queryKeys.caseDetail(caseId), queryFn: () => getCase(actor, caseId) });
 }
 
-export function useAssignableStaff() {
+export function useAssignableStaff(caseId: string) {
   const actor = useActor();
-  return useQuery({ queryKey: [...queryKeys.staff, actor.id], queryFn: () => listAssignableStaff(actor) });
+  return useQuery({ queryKey: [...queryKeys.staff, actor.id, caseId], queryFn: () => listAssignableStaff(actor, caseId) });
 }
 
 /** Wraps a case action so it receives the current user and refreshes every affected screen. */

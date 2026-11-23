@@ -84,7 +84,7 @@ describe('export mock API responses', () => {
     write('reference/vets.json', { endpoint: 'GET /vets', description: 'Examining vet picker on Arrival Exam.', response: await arrivals.listVets() });
     write('reference/countries.json', { endpoint: 'GET /countries', description: 'Country of origin picker on New Arrival.', response: await arrivals.listCountries() });
     write('reference/clinical-signs.json', { endpoint: 'GET /clinical-signs', description: 'AQC symptom taxonomy used by the AI extraction and the sign editor on Confirm AI result.', response: await observations.listSigns() });
-    write('reference/assignable-staff.json', { endpoint: 'GET /staff/assignable', description: 'Case assignee picker (officer-side staff only).', role: 'officer', response: await cases.listAssignableStaff(OFFICER) });
+    write('reference/assignable-staff.json', { endpoint: 'GET /staff/assignable', description: 'Case assignee picker (officer-side staff only).', role: 'officer', response: await cases.listAssignableStaff(OFFICER, 'C-2026-0142') });
 
     // --- Operations ---------------------------------------------------------------------------------
     for (const actor of [OFFICER, CONTRACTOR]) {

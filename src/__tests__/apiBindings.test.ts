@@ -55,7 +55,10 @@ const backendAnimal: Animal = {
 const medAnimal = { ...backendAnimal, id: 5, kennel: 'KC1-1' };
 
 beforeEach(() => {
+  // Seed the demo data around NOW (the seed is relative to Date.now()), so the demo schedules are active on NOW's date.
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(NOW);
   resetMockDb();
+  clock.mockRestore();
   jest.clearAllMocks();
   mockDb.animals.push({ ...backendAnimal, today: { ...backendAnimal.today } });
   api.getApiV1Animals.mockImplementation(() => ok([]));

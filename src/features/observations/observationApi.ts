@@ -1,14 +1,15 @@
 /**
  * Ad-hoc observations, AI confirmation and the review queue.
  *
- * With EXPO_PUBLIC_API_URL set, an observation that is unlinked or about a backend animal is saved with
- * POST /observations, and one opened by id is loaded with GET /observations/{id} (observationBackend.ts).
- * Observations about demo animals stay on the in-memory demo store.
- * Still MOCK for every observation: the AI result (AI-006), confirm routing (BE-018) and the review queue
- * (BE-019), which have no endpoints yet; the rule-based mock AI (src/mock/ai.ts) runs on the device.
+ * With EXPO_PUBLIC_API_URL set (observationBackend.ts): an observation that is unlinked or about a backend
+ * animal is saved with POST /observations; one opened by id is loaded with GET /observations/{id} and its
+ * AI result with GET /observations/{id}/ai-result; Confirm & Route sends POST /observations/{id}/route;
+ * AI triage merges GET /observations/review-queue. Observations about demo animals stay on the in-memory
+ * store. Until the server has an AI result, the rule-based mock AI (src/mock/ai.ts) runs on the device.
+ * Still MOCK: "Correct" (send to AI triage) has no endpoint, so it only changes the device's copy.
  * Media upload (POST /media/presign) needs a real camera/picker, which the app does not have yet.
  */
-import { isApiEnabled } from '@/api';
+import { ApiError, isApiEnabled } from '@/api';
 import type {
   Actor,
   Animal,
@@ -18,7 +19,8 @@ import type {
   Observation,
   RoutingAction,
 } from '@/domain/types';
-import { syncAnimals } from '@/features/animals/animalSource';
+import { ensureAnimal, syncAnimals } from '@/features/animals/animalSource';
+import { syncCases } from '@/features/cases/casesApi';
 import { AI_PROCESSING_MS } from '@/mock/ai';
 import { applyRouting } from '@/mock/caseRules';
 import { mockDb, mockSigns, newMockId } from '@/mock/db';
@@ -34,7 +36,7 @@ import * as backend from './observationBackend';
 export { CONFIDENCE_THRESHOLD, confidenceLabel, needsReview } from '@/mock/ai';
 
 export class ObservationError extends Error {
-  readonly kind: 'empty' | 'not_found' | 'no_animal' | 'already_routed' | 'invalid_case';
+  readonly kind: 'empty' | 'not_found' | 'no_animal' | 'already_routed' | 'invalid_case' | 'rejected' | 'offline';
   constructor(kind: ObservationError['kind'], message: string) {
     super(message);
     this.name = 'ObservationError';
@@ -121,9 +123,27 @@ export interface ObservationDetail {
   cases: HealthCase[];
 }
 
+/** Backend calls only run online; offline (demo) screens read the device's copy. */
+function backendOnline(): boolean {
+  return isApiEnabled() && isOnline();
+}
+
+/** Server data that only adds detail (cases for routing choices, the triage queue): failures are logged, not shown. */
+async function optional(load: Promise<unknown>, what: string): Promise<void> {
+  try {
+    await load;
+  } catch (error) {
+    if (__DEV__) console.warn(`Observations: couldn't load ${what}.`, error);
+  }
+}
+
 export async function getObservation(id: string): Promise<ObservationDetail | null> {
   await simulateLatency();
-  if (isApiEnabled() && isBackendId(id)) await backend.getObservation(id);
+  if (backendOnline() && isBackendId(id)) {
+    await backend.getObservation(id);
+    // The routing choices list the animal's cases.
+    await optional(syncCases(), 'the cases');
+  }
   resolvePendingAnalyses();
   const observation = mockDb.observations.find((o) => o.id === id);
   if (!observation) return null;
@@ -138,6 +158,7 @@ export async function getObservation(id: string): Promise<ObservationDetail | nu
 /** Cases an observation could be routed to for a given animal (used when the user changes the animal). */
 export async function listCasesForAnimal(animalId: string): Promise<HealthCase[]> {
   await simulateLatency(0);
+  if (backendOnline() && isBackendId(animalId)) await optional(syncCases(), 'the cases');
   return overTheWire(mockDb.cases.filter((c) => c.animalId === animalId));
 }
 
@@ -156,6 +177,34 @@ export interface ConfirmRoutingResult {
   animalId: string;
 }
 
+/** The server's rejection as an ObservationError with its message; anything else is rethrown. */
+function routingErrorFrom(error: unknown): never {
+  if (error instanceof ApiError && error.rejected) {
+    const kind = error.status === 404 ? 'not_found' : error.status === 409 ? 'already_routed' : 'rejected';
+    throw new ObservationError(kind, error.message);
+  }
+  throw error;
+}
+
+/** POST /observations/{id}/route for a backend observation; the server applies the case rule. */
+async function confirmOnBackend(observation: Observation, input: ConfirmRoutingInput & { animalId: string }, now: number): Promise<ConfirmRoutingResult> {
+  if (!isOnline()) throw new ObservationError('offline', 'Routing needs a connection. Turn off "Work offline" and try again.');
+  if (!isBackendId(input.animalId)) throw new ObservationError('no_animal', 'Pick an animal registered on the server.');
+  let caseId: string | null;
+  try {
+    caseId = await backend.routeObservation(observation.id, { action: input.action, animalId: input.animalId, caseId: input.caseId, signs: input.signs });
+  } catch (error) {
+    return routingErrorFrom(error);
+  }
+  if (observation.ai) observation.ai.extraction.signs = [...input.signs];
+  observation.animalId = input.animalId;
+  observation.status = 'routed';
+  observation.routing = { action: input.action, animalId: input.animalId, caseId, confirmedBy: input.actor.name, confirmedAt: now };
+  // The case was created or changed on the server.
+  await optional(syncCases(), 'the cases');
+  return { caseId, animalId: input.animalId };
+}
+
 /** Confirm & Route (FE-012) and review-queue triage (FE-017). The officer's decision is recorded. */
 export async function confirmRouting(input: ConfirmRoutingInput): Promise<ConfirmRoutingResult> {
   await simulateLatency();
@@ -167,6 +216,7 @@ export async function confirmRouting(input: ConfirmRoutingInput): Promise<Confir
   if ((input.action === 'update-case' || input.action === 'reopen-case') && !input.caseId) {
     throw new ObservationError('invalid_case', 'Choose the case to update.');
   }
+  if (isApiEnabled() && isBackendId(observation.id)) return confirmOnBackend(observation, { ...input, animalId: input.animalId }, now);
 
   const healthCase = applyRouting({
     action: input.action,
@@ -223,12 +273,25 @@ function reviewReason(observation: Observation): ReviewReason {
 const REASON_ORDER: Record<ReviewReason, number> = { 'no-match': 0, 'low-confidence': 1, 'ai-unavailable': 2 };
 
 /**
+ * Merges the server's review queue (GET /observations/review-queue) into the store, with the animals it
+ * mentions. Used by AI triage and the Operations review count. Does nothing without the API or offline.
+ */
+export async function syncReviewQueue(): Promise<void> {
+  if (!backendOnline()) return;
+  const { stayIds } = await backend.loadReviewQueue();
+  await Promise.all(stayIds.map((id) => optional(ensureAnimal(id), `animal ${id}`)));
+}
+
+/**
  * Observations the AI could not match, scored below the threshold, or could not process (BE-019).
  * Unmatched first (they need the most work), then low confidence, then AI unavailable; newest first.
+ * With the API, the server's queue is merged in; ones it holds that await confirmation are opened from
+ * Operations and the case instead.
  */
 export async function listReviewQueue(): Promise<ReviewQueueItem[]> {
   await simulateLatency();
   await syncAnimals();
+  await Promise.all([syncReviewQueue(), optional(syncCases(), 'the cases')]);
   resolvePendingAnalyses();
   const animals = new Map(mockDb.animals.map((a) => [a.id, a]));
   return overTheWire(mockDb.observations

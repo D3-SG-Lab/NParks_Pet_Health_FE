@@ -114,7 +114,7 @@ function ProfileBody({ header, profile }: { header: ReactNode; profile: AnimalPr
       router.push({ pathname: '/case/[id]', params: { id: citation.id } });
       return;
     }
-    const entry = timeline.find((e) => e.id === citation.id);
+    const entry = timeline.find((e) => e.id === citation.id && e.kind === citation.kind);
     if (entry) setOpenEntry(entry);
   };
 
@@ -198,10 +198,17 @@ function ProfileBody({ header, profile }: { header: ReactNode; profile: AnimalPr
             <AppText variant="titleS" tone="ai" style={styles.aiTitle}>
               AI 30-day summary
             </AppText>
-            <AppText variant="bodyS" tone="subtle">
-              {relativeTime(summary.updatedAt)}
-            </AppText>
+            {summary.statements.length > 0 ? (
+              <AppText variant="bodyS" tone="subtle">
+                {relativeTime(summary.updatedAt)}
+              </AppText>
+            ) : null}
           </View>
+          {summary.statements.length === 0 ? (
+            <AppText tone="muted" testID="profile-summary-empty">
+              No AI summary yet. It appears here once one has been generated from this animal’s records.
+            </AppText>
+          ) : null}
           <View style={styles.statements}>
             {summary.statements.map((statement, i) => (
               <View key={i} style={styles.statement}>
@@ -227,9 +234,11 @@ function ProfileBody({ header, profile }: { header: ReactNode; profile: AnimalPr
               </View>
             ))}
           </View>
-          <AppText variant="caption" tone="muted">
-            AI-generated from this animal’s records. Tap a citation to open the source.
-          </AppText>
+          {summary.statements.length > 0 ? (
+            <AppText variant="caption" tone="muted">
+              AI-generated from this animal’s records. Tap a citation to open the source.
+            </AppText>
+          ) : null}
         </Card>
 
         {openCases.map((c) => (

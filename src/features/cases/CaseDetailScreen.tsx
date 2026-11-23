@@ -37,7 +37,7 @@ import { focusRing, theme } from '@/theme';
 import { addDaysIso, formatDateTime, formatDayMonth, isoToDdMm, todayIso } from '@/utils/dates';
 
 import { CASE_STATUS_CHIP } from './CasesScreen';
-import { CLOSE_REASONS, type CaseDetail } from './casesApi';
+import { CLOSE_REASONS, CaseError, type CaseDetail } from './casesApi';
 import {
   useAddFollowUp,
   useAddNote,
@@ -96,7 +96,7 @@ function CaseBody({ header, detail }: { header: ReactNode; detail: CaseDetail })
   const toast = useToast();
   const { role } = useSession();
   const isOfficer = role === 'officer';
-  const { healthCase, animal, assignee, summary, pendingObservationId } = detail;
+  const { healthCase, animal, assignee, summary, pendingObservationId, actions } = detail;
   const caseId = healthCase.id;
   const closed = healthCase.status === 'closed';
   const chip = CASE_STATUS_CHIP[healthCase.status];
@@ -191,12 +191,18 @@ function CaseBody({ header, detail }: { header: ReactNode; detail: CaseDetail })
         isOfficer ? (
           <>
             {closed ? (
-              <Button label="Reopen case" variant="secondary" loading={reopen.isPending} onPress={() => void doReopen()} testID="case-reopen" />
+              actions.reopen ? (
+                <Button label="Reopen case" variant="secondary" loading={reopen.isPending} onPress={() => void doReopen()} testID="case-reopen" />
+              ) : null
             ) : (
               <Button label="Close case…" variant="dangerOutline" onPress={() => setCloseOpen(true)} testID="case-close" />
             )}
             <AppText variant="bodyS" tone="subtle" center>
-              {closed ? 'Reopening keeps the full earlier history' : 'Officers only · a closure reason is required'}
+              {closed
+                ? actions.reopen
+                  ? 'Reopening keeps the full earlier history'
+                  : 'To reopen it, route a related observation to this case'
+                : 'Officers only · a closure reason is required'}
             </AppText>
           </>
         ) : undefined
@@ -218,14 +224,16 @@ function CaseBody({ header, detail }: { header: ReactNode; detail: CaseDetail })
             <AppText variant="titleS" tone="warning">
               This case needs review
             </AppText>
-            <Button
-              label="Mark as reviewed"
-              variant="secondary"
-              size="md"
-              loading={markReviewed.isPending}
-              onPress={() => void markReviewed.mutateAsync({ caseId }).then(() => toast.show('Case marked as reviewed.', 'success'))}
-              testID="case-mark-reviewed"
-            />
+            {actions.markReviewed ? (
+              <Button
+                label="Mark as reviewed"
+                variant="secondary"
+                size="md"
+                loading={markReviewed.isPending}
+                onPress={() => void markReviewed.mutateAsync({ caseId }).then(() => toast.show('Case marked as reviewed.', 'success'))}
+                testID="case-mark-reviewed"
+              />
+            ) : null}
           </Card>
         ) : null}
 
@@ -257,7 +265,12 @@ function CaseBody({ header, detail }: { header: ReactNode; detail: CaseDetail })
                   // Ignore repeat presses while saving rather than disabling: disabling would flash the disabled
                   // style and drop keyboard focus.
                   onChange={(done) => {
-                    if (!setDone.isPending) setDone.mutate({ caseId, followUpId: followUp.id, done });
+                    if (!setDone.isPending) {
+                      setDone.mutate(
+                        { caseId, followUpId: followUp.id, done },
+                        { onError: (error) => toast.show(error instanceof CaseError ? error.message : "Couldn't update the follow-up. Please try again.", 'error') },
+                      );
+                    }
                   }}
                   trailing={<DueLabel followUp={followUp} />}
                 />
@@ -298,24 +311,26 @@ function CaseBody({ header, detail }: { header: ReactNode; detail: CaseDetail })
           )}
         </View>
 
-        <View style={styles.section}>
-          <SectionLabel>Notes</SectionLabel>
-          {notes.map((note) => (
-            <Card key={note.id} style={styles.note}>
-              <AppText variant="caption" tone="muted">
-                <AppText variant="caption" bold>
-                  {note.by}
+        {actions.note || notes.length > 0 ? (
+          <View style={styles.section}>
+            <SectionLabel>Notes</SectionLabel>
+            {notes.map((note) => (
+              <Card key={note.id} style={styles.note}>
+                <AppText variant="caption" tone="muted">
+                  <AppText variant="caption" bold>
+                    {note.by}
+                  </AppText>
+                  {' · '}
+                  <AppText variant="mono" tone="muted" style={styles.small}>
+                    {formatDateTime(note.at)}
+                  </AppText>
                 </AppText>
-                {' · '}
-                <AppText variant="mono" tone="muted" style={styles.small}>
-                  {formatDateTime(note.at)}
-                </AppText>
-              </AppText>
-              <AppText>{note.detail}</AppText>
-            </Card>
-          ))}
-          <NoteComposer caseId={caseId} />
-        </View>
+                <AppText>{note.detail}</AppText>
+              </Card>
+            ))}
+            {actions.note ? <NoteComposer caseId={caseId} /> : null}
+          </View>
+        ) : null}
 
         <View style={styles.section}>
           <Pressable
@@ -445,12 +460,16 @@ function NoteComposer({ caseId }: { caseId: string }) {
 
 function AssignSheet({ visible, onClose, healthCase }: { visible: boolean; onClose: () => void; healthCase: HealthCase }) {
   const toast = useToast();
-  const staff = useAssignableStaff();
+  const staff = useAssignableStaff(healthCase.id);
   const assign = useAssignCase();
   return (
     <BottomSheet visible={visible} title="Assign case" onClose={onClose} scroll testID="assign-sheet">
       {staff.isPending ? (
         <SkeletonList label="Loading staff" rows={3} />
+      ) : !staff.data?.length ? (
+        <AppText tone="muted" testID="assign-empty">
+          No staff available to assign yet.
+        </AppText>
       ) : (
         <View accessibilityRole="radiogroup" accessibilityLabel="Assign to" style={styles.options}>
           {(staff.data ?? []).map((member) => (
@@ -468,7 +487,7 @@ function AssignSheet({ visible, onClose, healthCase }: { visible: boolean; onClo
                     toast.show(`Assigned to ${member.name}.`, 'success');
                     onClose();
                   })
-                  .catch(() => toast.show("Couldn't reassign the case.", 'error'))
+                  .catch((error: unknown) => toast.show(error instanceof CaseError ? error.message : "Couldn't reassign the case.", 'error'))
               }
             />
           ))}
@@ -496,8 +515,8 @@ function FollowUpSheet({ visible, onClose, caseId }: { visible: boolean; onClose
       setText('');
       setError(undefined);
       onClose();
-    } catch {
-      setError("Couldn't add the follow-up. Please try again.");
+    } catch (error) {
+      setError(error instanceof CaseError ? error.message : "Couldn't add the follow-up. Please try again.");
     }
   };
 

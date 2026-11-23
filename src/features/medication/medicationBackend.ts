@@ -37,8 +37,11 @@ function oneOf<T extends string>(values: readonly T[], value: unknown, fallback:
   return values.find((v) => v === value) ?? fallback;
 }
 
-/** The store's copy of the animal when it has one (same backend id), else the response's. */
-function toAnimal(dto: AnimalInfoResponse): Animal {
+/**
+ * The store's copy of the animal when it has one (same backend id), else the response's. Also used for
+ * the animal on a case (CaseAnimalResponse has the same shape).
+ */
+export function toAnimal(dto: AnimalInfoResponse): Animal {
   const id = String(dto.id);
   const known = mockDb.animals.find((a) => a.id === id);
   if (known) return known;
@@ -60,7 +63,7 @@ function toAnimal(dto: AnimalInfoResponse): Animal {
 }
 
 /** Epoch ms; the server may send it as a number, a numeric string or an ISO timestamp. */
-function toTime(value: number | string): number {
+export function toTime(value: number | string): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : Date.parse(String(value)) || Date.now();
 }

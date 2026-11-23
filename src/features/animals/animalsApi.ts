@@ -1,11 +1,14 @@
 /**
  * Animal picker, profile, health-record timeline and AI summary data access.
  *
- * With EXPO_PUBLIC_API_URL set, backend animals and their exam, inspections, observations and today's
- * medication are loaded into the store first (animalSource.ts), and a timeline row opens the backend's
- * record (GET /animals/inspections/{id}, GET /observations/{id}). The timeline is then built here from
- * those records, as the backend has no timeline feed (BE-020). Still MOCK: cases on the timeline and the
- * 30-day AI summary with citations (AI-005), which have no endpoints yet.
+ * With EXPO_PUBLIC_API_URL set, backend animals and their exam, inspections, observations, today's
+ * medication and cases are loaded into the store first (animalSource.ts, casesApi.ts). A backend
+ * animal's profile then takes its timeline from GET /animals/{stayId}/timeline (rows the store also
+ * holds are shown with the store's detail) and its AI summary from GET /animals/{stayId}/summary (none
+ * until the server has generated one). Opening the timeline is what the server counts as "recently
+ * viewed" (GET /me/recent-animals). A timeline row opens the backend's record (GET
+ * /animals/inspections/{id}, GET /observations/{id}). Demo animals keep the device-built timeline and
+ * the mock summary (src/mock/ai.ts).
  */
 import { isApiEnabled } from '@/api';
 import { SESSION_DUE_TIME, describeInspection, isInspectionAbnormal } from '@/domain/describe';
@@ -24,15 +27,32 @@ import {
   type TimelineEntry,
 } from '@/domain/types';
 import { getInspection } from '@/features/inspections/inspectionBackend';
+import { syncCases } from '@/features/cases/casesApi';
 import { getObservation } from '@/features/observations/observationBackend';
 import { summariseAnimal } from '@/mock/ai';
 import { mockDb, mockVets } from '@/mock/db';
 import { overTheWire, simulateLatency } from '@/mock/latency';
 import { resolvePendingAnalyses } from '@/mock/processing';
 import { ScopeError, animalsInScope, canSeeAnimal, isBackendId } from '@/mock/scope';
+import { isOnline } from '@/mock/sync';
 import { isoDateOf, msAt, sessionFor } from '@/utils/dates';
 
 import { backendVetName, ensureAnimal, loadAnimalRecords, syncAnimals } from './animalSource';
+import * as timelineBackend from './timelineBackend';
+
+/** Backend extras (cases, timeline, summary, recents): when one fails the screen shows what it has. Logged in development. */
+async function optional<T>(load: Promise<T>, fallback: T, what: string): Promise<T> {
+  try {
+    return await load;
+  } catch (error) {
+    if (__DEV__) console.warn(`Animals: couldn't load ${what}.`, error);
+    return fallback;
+  }
+}
+
+function backendOnline(): boolean {
+  return isApiEnabled() && isOnline();
+}
 
 /** Picker / list status, in the wireframe's words. */
 export type AnimalListStatus = 'unwell' | 'due' | 'active';
@@ -57,15 +77,22 @@ function toListItem(animal: Animal, session: InspectionSession): AnimalListItem 
 export async function listAnimals(actor: Actor, now: number = Date.now()): Promise<AnimalListItem[]> {
   await simulateLatency();
   await syncAnimals();
+  // "Unwell" means an open case.
+  if (backendOnline()) await optional(syncCases(), undefined, 'the cases');
   const session = sessionFor(new Date(now));
   return overTheWire(animalsInScope(actor)
     .sort((a, b) => a.kennel.localeCompare(b.kennel, undefined, { numeric: true }))
     .map((animal) => toListItem(animal, session)));
 }
 
+/**
+ * Animals picked in the picker on this device, then (with the API) the ones whose profile the user
+ * viewed most recently (GET /me/recent-animals); at most 3, newest first.
+ */
 export async function listRecentAnimalIds(): Promise<string[]> {
   await simulateLatency(0);
-  return [...mockDb.recentAnimalIds];
+  const viewed = backendOnline() ? await optional(timelineBackend.listRecentAnimalIds(), [], 'the recent animals') : [];
+  return [...new Set([...mockDb.recentAnimalIds, ...viewed])].slice(0, 3);
 }
 
 /** Remembers a picked animal so it is offered first next time. */
@@ -197,6 +224,19 @@ function caseEntries(healthCase: HealthCase): TimelineEntry[] {
     }));
 }
 
+/**
+ * The server's timeline, with the store's entry wherever it has the same record (it carries more detail:
+ * who, findings, media, the case), plus records only this device has (saved offline, not yet sent).
+ */
+function mergeTimeline(server: readonly TimelineEntry[], local: readonly TimelineEntry[]): TimelineEntry[] {
+  const known = new Map(local.map((entry) => [`${entry.kind}:${entry.id}`, entry]));
+  const fromServer = server.map((entry) => known.get(`${entry.kind}:${entry.id}`) ?? entry);
+  const deviceOnly = local.filter((entry) => entry.kind !== 'case' && !isBackendId(entry.id));
+  return [...fromServer, ...deviceOnly].sort((a, b) => b.at - a.at);
+}
+
+const NO_SUMMARY = (now: number): AnimalSummary => ({ statements: [], sources: [], updatedAt: now });
+
 /** One chronological feed per stay, newest first (BE-020). */
 export function buildTimeline(animalId: string): TimelineEntry[] {
   const cases = mockDb.cases.filter((c) => c.animalId === animalId);
@@ -235,11 +275,19 @@ const DAY_MS = 24 * 60 * 60_000;
 export async function getAnimalProfile(actor: Actor, animalId: string, now: number = Date.now()): Promise<AnimalProfile | null> {
   await simulateLatency();
   if (await ensureAnimal(animalId)) await loadAnimalRecords(animalId, now);
+  const fromServer = backendOnline() && isBackendId(animalId);
+  const [serverTimeline, serverSummary] = fromServer
+    ? await Promise.all([
+        optional(timelineBackend.loadTimeline(animalId), null, `the timeline of animal ${animalId}`),
+        optional(timelineBackend.loadSummary(animalId), null, `the AI summary of animal ${animalId}`),
+        optional(syncCases(), undefined, 'the cases'),
+      ])
+    : [null, null];
   resolvePendingAnalyses(now);
   const animal = mockDb.animals.find((a) => a.id === animalId);
   if (!animal) return null;
   if (!canSeeAnimal(actor, animal)) throw new ScopeError();
-  const timeline = buildTimeline(animalId);
+  const timeline = serverTimeline ? mergeTimeline(serverTimeline, buildTimeline(animalId)) : buildTimeline(animalId);
   const cases = mockDb.cases.filter((c) => c.animalId === animalId).sort((a, b) => b.updatedAt - a.updatedAt);
   const today = isoDateOf(now);
   const inspections = mockDb.inspections.filter((i) => i.animalId === animalId);
@@ -252,13 +300,16 @@ export async function getAnimalProfile(actor: Actor, animalId: string, now: numb
   return overTheWire({
     animal,
     timeline,
-    summary: summariseAnimal({
-      entries: timeline,
-      cases,
-      inspections,
-      schedules: mockDb.schedules.filter((s) => s.animalId === animalId),
-      now,
-    }),
+    // Backend animals show the server's summary only (none until it has generated one).
+    summary: fromServer
+      ? (serverSummary ?? NO_SUMMARY(now))
+      : summariseAnimal({
+          entries: timeline,
+          cases,
+          inspections,
+          schedules: mockDb.schedules.filter((s) => s.animalId === animalId),
+          now,
+        }),
     cases,
     openCases: cases.filter((c) => c.status !== 'closed'),
     medicationCount: mockDb.schedules.filter((s) => s.animalId === animalId && s.startDate <= today && s.endDate >= today).length,

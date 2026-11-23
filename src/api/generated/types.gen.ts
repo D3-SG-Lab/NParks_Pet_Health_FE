@@ -4,6 +4,15 @@ export type ClientOptions = {
     baseUrl: 'https://linthitd3-001-site1.ktempurl.com/' | (string & {});
 };
 
+export type AiSignResponse = {
+    code: string;
+};
+
+export type AnimalAiSummaryResponse = {
+    updatedAt: string;
+    statements: Array<SummaryStatementResponse>;
+};
+
 export type AnimalInfoResponse = {
     id: number | string;
     name: string;
@@ -43,6 +52,16 @@ export type AnimalStayResponse = {
     createdBy: number | string;
     createdAt: string;
     updatedAt: string;
+};
+
+export type AnimalTimelineResponse = {
+    stayId: number | string;
+    name: string;
+    species: string;
+    kennelCode: string;
+    status: string;
+    arrivalDate: string;
+    entries: Array<TimelineEntryResponse>;
 };
 
 export type AqcCountryResponse = {
@@ -100,6 +119,80 @@ export type CallbackRequestDto = {
     code: string;
     state: string;
     redirectUri: string;
+};
+
+export type CaseAnimalResponse = {
+    id: number | string;
+    name: string;
+    kennel: string;
+    species: string;
+    sex: string;
+    countryCode: null | string;
+    microchip: string;
+    dateOfBirth: null | string;
+    arrivalDate: string;
+    releaseDate: null | string;
+    status: string;
+    today: CaseTodayResponse;
+};
+
+export type CaseDetailResponse = {
+    healthCase: HealthCaseResponse;
+    animal: CaseAnimalResponse;
+    assignee: null | StaffMemberResponse;
+    summary: string;
+    pendingObservationId: null | number | string;
+};
+
+export type CaseEventResponse = {
+    id: number | string;
+    at: number | string;
+    kind: string;
+    title: string;
+    by: string;
+    detail: null | string;
+    observationId: null | number | string;
+    inspectionId: null | number | string;
+};
+
+export type CaseEvidenceResponse = {
+    id: number | string;
+    kind: string;
+    durationSec: null | number | string;
+};
+
+export type CaseFollowUpResponse = {
+    id: number | string;
+    text: string;
+    dueDate: string;
+    done: boolean;
+};
+
+export type CaseListItemResponse = {
+    healthCase: HealthCaseResponse;
+    animal: CaseAnimalResponse;
+    assignee: null | StaffMemberResponse;
+    overdueFollowUps: number | string;
+};
+
+export type CaseTodayResponse = {
+    arrivalExam: string;
+    amInspection: string;
+    pmInspection: string;
+};
+
+export type CloseCaseRequest = {
+    reason: string;
+    note: null | string;
+};
+
+export type ConfirmRoutingRequest = {
+    action?: string;
+    stayId?: null | number | string;
+    caseId?: null | string;
+    finding?: null | string;
+    clinicalSystem?: null | string;
+    confirmedSigns?: null | Array<string>;
 };
 
 export type CreateAnimalStayRequest = {
@@ -193,6 +286,30 @@ export type DoseSlotResponse = {
     administration: null | MedicationAdministrationResponse;
 };
 
+export type FollowUpInput = {
+    id: null | string;
+    text: string;
+    dueDate: string;
+    done: boolean;
+};
+
+export type HealthCaseResponse = {
+    id: string;
+    animalId: number | string;
+    finding: string;
+    system: string;
+    status: string;
+    openedAt: number | string;
+    updatedAt: number | string;
+    assigneeId: null | number | string;
+    followUps: Array<CaseFollowUpResponse>;
+    events: Array<CaseEventResponse>;
+    evidence: Array<CaseEvidenceResponse>;
+    closedAt: null | number | string;
+    closeReason: null | string;
+    reopenedAt: null | number | string;
+};
+
 export type InspectionSystemFindingInput = {
     system: string;
     finding: string;
@@ -237,6 +354,20 @@ export type NParksAdminResponse = {
     updatedAt: string;
 };
 
+export type ObservationAiResultResponse = {
+    observationId: number | string;
+    matchedStayId: null | number | string;
+    matchConfidence: null | number | string;
+    foodExtracted: null | string;
+    stoolExtracted: null | string;
+    onsetDate: null | string;
+    severity: null | string;
+    suggestedAction: null | string;
+    suggestedCaseId: null | number | string;
+    rationale: null | string;
+    signs: Array<AiSignResponse>;
+};
+
 export type ObservationMediaInput = {
     mediaKind: string;
     mediaKey: string;
@@ -263,6 +394,11 @@ export type ObservationResponse = {
     aiUnavailable: boolean;
     readyAt: null | string;
     media: Array<ObservationMediaResponse>;
+};
+
+export type PatchCaseRequest = {
+    assigneeId: null | string;
+    followUps: null | Array<FollowUpInput>;
 };
 
 export type PetBreedResponse = {
@@ -312,6 +448,15 @@ export type ProblemDetails = {
     instance?: null | string;
 };
 
+export type RecentAnimalResponse = {
+    stayId: number | string;
+    name: string;
+    species: string;
+    kennelCode: string;
+    status: string;
+    viewedAt: string;
+};
+
 export type RecordMedicationRequest = {
     scheduleId: number | string;
     slot: string;
@@ -327,6 +472,42 @@ export type RegisterPushTokenRequest = {
     platform: string;
 };
 
+export type ReviewQueueAiSuggestionResponse = {
+    suggestedAction: null | string;
+    severity: null | string;
+    signs: Array<string>;
+};
+
+export type ReviewQueueAnimalResponse = {
+    stayId: number | string;
+    name: string;
+    species: string;
+    kennelCode: string;
+};
+
+export type ReviewQueueItemResponse = {
+    id: number | string;
+    text: string;
+    submittedAt: string;
+    status: string;
+    aiUnavailable: boolean;
+    submittedBy: ReviewQueueSubmitterResponse;
+    animal: null | ReviewQueueAnimalResponse;
+    aiSuggestion: null | ReviewQueueAiSuggestionResponse;
+};
+
+export type ReviewQueueSubmitterResponse = {
+    id: number | string;
+    name: string;
+};
+
+export type RoutingResponse = {
+    observation: ObservationResponse;
+    action: string;
+    caseId: null | number | string;
+    caseNumber: null | string;
+};
+
 export type SaveExamDraftRequest = {
     vetStaffId: null | number | string;
     weightKg: null | number | string;
@@ -334,10 +515,38 @@ export type SaveExamDraftRequest = {
     findings: null | Array<ArrivalExamFindingInput>;
 };
 
+export type StaffMemberResponse = {
+    id: number | string;
+    name: string;
+    role: string;
+};
+
 export type SubmitObservationRequest = {
     stayId: null | number | string;
     text: string;
     media: null | Array<ObservationMediaInput>;
+};
+
+export type SummaryCitationResponse = {
+    refIndex: number | string;
+    sourceKind: string;
+    sourceId: string;
+    label: string;
+};
+
+export type SummaryStatementResponse = {
+    text: string;
+    citations: Array<SummaryCitationResponse>;
+};
+
+export type TimelineEntryResponse = {
+    id: number | string;
+    kind: string;
+    occurredAt: string;
+    title: string;
+    detail: null | string;
+    subLabel: null | string;
+    referenceId: number | string;
 };
 
 export type TodayStatusResponse = {
@@ -596,6 +805,80 @@ export type PatchApiV1AdminVeterinariansByIdStatusResponses = {
 };
 
 export type PatchApiV1AdminVeterinariansByIdStatusResponse = PatchApiV1AdminVeterinariansByIdStatusResponses[keyof PatchApiV1AdminVeterinariansByIdStatusResponses];
+
+export type GetApiV1AnimalsByStayIdTimelineData = {
+    body?: never;
+    path: {
+        stayId: number;
+    };
+    query?: never;
+    url: '/api/v1/animals/{stayId}/timeline';
+};
+
+export type GetApiV1AnimalsByStayIdTimelineErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetApiV1AnimalsByStayIdTimelineError = GetApiV1AnimalsByStayIdTimelineErrors[keyof GetApiV1AnimalsByStayIdTimelineErrors];
+
+export type GetApiV1AnimalsByStayIdTimelineResponses = {
+    /**
+     * OK
+     */
+    200: AnimalTimelineResponse;
+};
+
+export type GetApiV1AnimalsByStayIdTimelineResponse = GetApiV1AnimalsByStayIdTimelineResponses[keyof GetApiV1AnimalsByStayIdTimelineResponses];
+
+export type GetApiV1AnimalsByStayIdSummaryData = {
+    body?: never;
+    path: {
+        stayId: number;
+    };
+    query?: never;
+    url: '/api/v1/animals/{stayId}/summary';
+};
+
+export type GetApiV1AnimalsByStayIdSummaryErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetApiV1AnimalsByStayIdSummaryError = GetApiV1AnimalsByStayIdSummaryErrors[keyof GetApiV1AnimalsByStayIdSummaryErrors];
+
+export type GetApiV1AnimalsByStayIdSummaryResponses = {
+    /**
+     * OK
+     */
+    200: AnimalAiSummaryResponse;
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type GetApiV1AnimalsByStayIdSummaryResponse = GetApiV1AnimalsByStayIdSummaryResponses[keyof GetApiV1AnimalsByStayIdSummaryResponses];
+
+export type GetApiV1MeRecentAnimalsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/recent-animals';
+};
+
+export type GetApiV1MeRecentAnimalsResponses = {
+    /**
+     * OK
+     */
+    200: Array<RecentAnimalResponse>;
+};
+
+export type GetApiV1MeRecentAnimalsResponse = GetApiV1MeRecentAnimalsResponses[keyof GetApiV1MeRecentAnimalsResponses];
 
 export type GetApiV1AnimalsData = {
     body?: never;
@@ -1006,6 +1289,127 @@ export type PostApiV1AuthDevTokenResponses = {
 };
 
 export type PostApiV1AuthDevTokenResponse = PostApiV1AuthDevTokenResponses[keyof PostApiV1AuthDevTokenResponses];
+
+export type GetApiV1CasesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/cases';
+};
+
+export type GetApiV1CasesResponses = {
+    /**
+     * OK
+     */
+    200: Array<CaseListItemResponse>;
+};
+
+export type GetApiV1CasesResponse = GetApiV1CasesResponses[keyof GetApiV1CasesResponses];
+
+export type GetApiV1CasesByCaseIdData = {
+    body?: never;
+    path: {
+        caseId: string;
+    };
+    query?: never;
+    url: '/api/v1/cases/{caseId}';
+};
+
+export type GetApiV1CasesByCaseIdErrors = {
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetApiV1CasesByCaseIdError = GetApiV1CasesByCaseIdErrors[keyof GetApiV1CasesByCaseIdErrors];
+
+export type GetApiV1CasesByCaseIdResponses = {
+    /**
+     * OK
+     */
+    200: CaseDetailResponse;
+};
+
+export type GetApiV1CasesByCaseIdResponse = GetApiV1CasesByCaseIdResponses[keyof GetApiV1CasesByCaseIdResponses];
+
+export type PatchApiV1CasesByCaseIdData = {
+    body: PatchCaseRequest;
+    path: {
+        caseId: string;
+    };
+    query?: never;
+    url: '/api/v1/cases/{caseId}';
+};
+
+export type PatchApiV1CasesByCaseIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PatchApiV1CasesByCaseIdError = PatchApiV1CasesByCaseIdErrors[keyof PatchApiV1CasesByCaseIdErrors];
+
+export type PatchApiV1CasesByCaseIdResponses = {
+    /**
+     * OK
+     */
+    200: CaseDetailResponse;
+};
+
+export type PatchApiV1CasesByCaseIdResponse = PatchApiV1CasesByCaseIdResponses[keyof PatchApiV1CasesByCaseIdResponses];
+
+export type PostApiV1CasesByCaseIdCloseData = {
+    body: CloseCaseRequest;
+    path: {
+        caseId: string;
+    };
+    query?: never;
+    url: '/api/v1/cases/{caseId}/close';
+};
+
+export type PostApiV1CasesByCaseIdCloseErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type PostApiV1CasesByCaseIdCloseError = PostApiV1CasesByCaseIdCloseErrors[keyof PostApiV1CasesByCaseIdCloseErrors];
+
+export type PostApiV1CasesByCaseIdCloseResponses = {
+    /**
+     * OK
+     */
+    200: CaseDetailResponse;
+};
+
+export type PostApiV1CasesByCaseIdCloseResponse = PostApiV1CasesByCaseIdCloseResponses[keyof PostApiV1CasesByCaseIdCloseResponses];
 
 export type GetApiV1AnimalsByStayIdInspectionsData = {
     body?: never;
@@ -1575,6 +1979,22 @@ export type PutApiV1MePushTokenResponses = {
 
 export type PutApiV1MePushTokenResponse = PutApiV1MePushTokenResponses[keyof PutApiV1MePushTokenResponses];
 
+export type GetApiV1ObservationsReviewQueueData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/observations/review-queue';
+};
+
+export type GetApiV1ObservationsReviewQueueResponses = {
+    /**
+     * OK
+     */
+    200: Array<ReviewQueueItemResponse>;
+};
+
+export type GetApiV1ObservationsReviewQueueResponse = GetApiV1ObservationsReviewQueueResponses[keyof GetApiV1ObservationsReviewQueueResponses];
+
 export type PostApiV1ObservationsData = {
     body: SubmitObservationRequest;
     path?: never;
@@ -1657,3 +2077,69 @@ export type GetApiV1AnimalsByStayIdObservationsResponses = {
 };
 
 export type GetApiV1AnimalsByStayIdObservationsResponse = GetApiV1AnimalsByStayIdObservationsResponses[keyof GetApiV1AnimalsByStayIdObservationsResponses];
+
+export type GetApiV1ObservationsByIdAiResultData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/v1/observations/{id}/ai-result';
+};
+
+export type GetApiV1ObservationsByIdAiResultErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetApiV1ObservationsByIdAiResultError = GetApiV1ObservationsByIdAiResultErrors[keyof GetApiV1ObservationsByIdAiResultErrors];
+
+export type GetApiV1ObservationsByIdAiResultResponses = {
+    /**
+     * OK
+     */
+    200: ObservationAiResultResponse;
+};
+
+export type GetApiV1ObservationsByIdAiResultResponse = GetApiV1ObservationsByIdAiResultResponses[keyof GetApiV1ObservationsByIdAiResultResponses];
+
+export type PostApiV1ObservationsByIdRouteData = {
+    body: ConfirmRoutingRequest;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/v1/observations/{id}/route';
+};
+
+export type PostApiV1ObservationsByIdRouteErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type PostApiV1ObservationsByIdRouteError = PostApiV1ObservationsByIdRouteErrors[keyof PostApiV1ObservationsByIdRouteErrors];
+
+export type PostApiV1ObservationsByIdRouteResponses = {
+    /**
+     * OK
+     */
+    200: RoutingResponse;
+};
+
+export type PostApiV1ObservationsByIdRouteResponse = PostApiV1ObservationsByIdRouteResponses[keyof PostApiV1ObservationsByIdRouteResponses];
